@@ -9,4 +9,5 @@ defmodule OCCI.Model.Helpers do
       end
     end
   end
+
 end
