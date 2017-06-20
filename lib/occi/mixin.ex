@@ -24,6 +24,20 @@ defmodule OCCI.Mixin do
 
       def depends, do: @depends
       def applies, do: @applies
+
+      def depends! do
+	Enum.reduce(@depends, [], fn dep, acc ->
+	  if dep in acc do
+	    acc
+	  else
+	    depends = case @model.mod(dep) do
+			nil -> []
+			mod -> mod.depends!()
+		      end
+	    acc ++ [ dep | depends ]
+	  end
+	end)
+      end
     end
   end
 end
