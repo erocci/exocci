@@ -5,7 +5,7 @@ defmodule OCCI.Model.Helpers do
       for {name, spec} <- specs do
         def set_attr(entity, unquote(name), value) do
           Map.put(entity, unquote(name), value)
-        end
+        end 
       end
     end
   end

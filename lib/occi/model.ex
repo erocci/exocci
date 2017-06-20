@@ -85,4 +85,11 @@ defmodule OCCI.Model do
     _ = Code.compile_quoted(quoted)
     :ok
   end
+
+  def parse_category(name) do
+    case String.split("#{name}", "#") do
+      [scheme, term] -> {:"#{scheme}#", :"#{term}"}
+      _ -> raise "Invalid category: #{name}"
+    end
+  end
 end
