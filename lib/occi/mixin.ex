@@ -1,14 +1,17 @@
 defmodule OCCI.Mixin do
   defmacro __using__(opts) do
-    depends = Keyword.get(opts, :depends, [])
-    applies = Keyword.get(opts, :applies, [])
     model = Keyword.get_lazy(opts, :model, fn -> raise "Missing argument: model" end)
-    {scheme, term} = OCCI.Model.parse_category(__CALLER__.module)
+
+    category = Keyword.get_lazy(opts, :category, fn -> raise "Missing argument: category" end)
+    {scheme, term} = OCCI.Model.parse_category(category)
+
+    depends = Keyword.get(opts, :depends, []) |> Enum.map(&(:"#{&1}"))
+    applies = Keyword.get(opts, :applies, []) |> Enum.map(&(:"#{&1}"))
 
     quote do
-      @model unquote(model)
+      @model :"#{unquote(model)}"
 
-      @category __MODULE__
+      @category unquote(category)
       @scheme unquote(scheme)
       @term unquote(term)
       

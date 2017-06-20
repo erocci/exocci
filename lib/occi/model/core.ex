@@ -1,9 +1,14 @@
 defmodule OCCI.Model.Core do
-  defmacro kind_resource do
-    :"http://schemas.ogf.org/occi/core#resource" 
-  end
+  use OCCI.Model
 
-  defmacro kind_link do
-    :"http://schemas.ogf.org/occi/core#link"
-  end
+  kind "http://schemas.ogf.org/occi/core#entity",
+    alias: Entity
+
+  kind "http://schemas.ogf.org/occi/core#resource",
+    parent: "http://schemas.ogf.org/occi/core#entity",
+    alias: Resource
+  
+  kind "http://schemas.ogf.org/occi/core#link",
+    parent: "http://schemas.ogf.org/occi/core#entity",
+    alias: Link
 end
