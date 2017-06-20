@@ -14,7 +14,7 @@ defmodule OCCI.Kind do
       @scheme unquote(scheme)
       @term unquote(term)
       
-      @parent :"#{unquote(parent)}"
+      @parent unquote(parent)
 
       def category, do: @category
       def scheme, do: @scheme
@@ -29,7 +29,7 @@ defmodule OCCI.Kind do
       ###
       defp parent!(nil), do: []
       defp parent!(parent) do
-	ancestors = parent.parent!()
+	ancestors = @model.mod(parent).parent!()
 	# avoid loops
 	if parent in ancestors, do: ancestors, else: [ parent | ancestors ]
       end

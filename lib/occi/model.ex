@@ -1,28 +1,44 @@
 defmodule OCCI.Model do
   
   @doc false
-  defmacro __using__(_) do
+  defmacro __using__(opts) do
+    import_core = Keyword.get(opts, :core, true)
     user_mixins_mod = Module.concat(__CALLER__.module, UserMixins)
+    Module.put_attribute(__CALLER__.module, :imports, MapSet.new)
     Module.put_attribute(__CALLER__.module, :kinds, Map.new)
     Module.put_attribute(__CALLER__.module, :mixins, Map.new)
-    
+
     quote do
       require OCCI.Model
       import OCCI.Model
-
+      
+      if unquote(import_core) do
+	imports = Module.get_attribute(__MODULE__, :imports)
+	Module.put_attribute(__MODULE__, :imports, MapSet.put(imports, OCCI.Model.Core))
+      end
+      
       def_user_mixins(unquote(user_mixins_mod), Map.new)
 
-      def kind?(name), do: Map.has_key?(@kinds, :"#{name}")
+      def kind?(name) do
+	name = :"#{name}"
+	Map.has_key?(@kinds, name) or Enum.any?(@imports, &(&1.kind?(name)))
+      end
 
-      def kinds, do: @kinds
+      def kinds do
+	Enum.reduce(@imports, @kinds,
+	  &(Map.merge(&1.kinds(), &2)))
+      end
 
       def mixin?(name) do
 	name = :"#{name}"
-	Map.has_key?(@mixins, name) or Map.has_key?(unquote(user_mixins_mod).mixins(), name)
+	Map.has_key?(@mixins, name)
+	or Map.has_key?(unquote(user_mixins_mod).mixins(), name)
+	or Enum.any?(@imports, &(&1.mixin?(name)))
       end
 
       def mixins do
-	Map.merge(@mixins, unquote(user_mixins_mod).mixins())
+	Enum.reduce(@imports, Map.merge(@mixins, unquote(user_mixins_mod).mixins()),
+	  &(Map.merge(&1.mixins(), &2)))
       end
 
       def mixin(name) do
@@ -39,22 +55,30 @@ defmodule OCCI.Model do
 	name = :"#{name}"
 	Map.get_lazy(@kinds, name, fn ->
 	  Map.get_lazy(@mixins, name, fn ->
-	    Map.get(unquote(user_mixins_mod), name)
+	    Map.get_lazy(unquote(user_mixins_mod).mixins(), name, fn ->
+	      Enum.find_value(@imports, &(&1.mod(name)))
+	    end)
 	  end)
 	end)
       end
     end
   end
 
+  defmacro import_model(name) do
+    mod = Macro.expand(name, __CALLER__)
+    imports = Module.get_attribute(__CALLER__.module, :imports)
+    Module.put_attribute(__CALLER__.module, :imports, MapSet.put(imports, mod))
+  end
+
   defmacro kind(name, args \\ []) do
     model = __CALLER__.module
 
-    modname = mod_name(name, model, args)
+    modname = mod_name(name, args, __CALLER__)
     name = name |> to_atom
     parent = case Keyword.get(args, :parent) do
-	       {:__aliases__, _, aliases} ->
-		 mod = Module.concat(aliases)
-		 mod.category()
+	       {:__aliases__, _, _}=aliases ->
+		 Macro.expand(aliases, __CALLER__).category()
+	       nil -> nil
 	       p -> :"#{p}"
 	     end
     attributes = Keyword.get(args, :attributes, [])
@@ -79,7 +103,7 @@ defmodule OCCI.Model do
   defmacro mixin(name, args \\ []) do
     model = __CALLER__.module
 
-    modname = mod_name(name, model, args)
+    modname = mod_name(name, args, __CALLER__)
     name = name |> to_atom
     depends = Keyword.get(args, :depends, [])
     applies = Keyword.get(args, :applies, [])
@@ -129,12 +153,12 @@ defmodule OCCI.Model do
     URI.encode(name, &URI.char_unreserved?/1)
   end
 
-  def mod_name(name, model, args) do
+  def mod_name(name, args, env) do
     case Keyword.get(args, :alias) do
       nil ->
 	mod_encode("#{name}") |> to_atom
-      {:__aliases__, _, aliases} ->
-	Module.concat([model | aliases ])
+      {:__aliases__, _, _}=aliases ->
+	Module.concat([env.module, Macro.expand(aliases, env)])
     end
   end
 end
