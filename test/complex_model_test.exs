@@ -10,6 +10,8 @@ defmodule ComplexModelTest do
     kind "http://example.org/occi/complex#mykind1",
       parent: "http://example.org/occi/complex#mykind0"
 
+    kind "http://example.org/occi/complex#mykind2"
+
     mixin "http://example.org/occi/complex#mymixin0"
 
     mixin "http://example.org/occi/complex#mymixin1"
@@ -28,6 +30,9 @@ defmodule ComplexModelTest do
 	"http://example.org/occi/complex#mymixin0",
 	"http://example.org/occi/complex#mymixin2"
       ]
+
+    mixin "http://example.org/occi/complex#mymixin20",
+      applies: [ "http://example.org/occi/complex#mykind1" ]
 end
   
   test "Creates model" do
@@ -70,4 +75,14 @@ end
       :"http://example.org/occi/complex#mymixin2"      
     ], ComplexModel.mod(:"http://example.org/occi/complex#mymixin12").depends!())
   end
+
+  test "Check mixin applies" do
+    assert ComplexModel.mod(:"http://example.org/occi/complex#mymixin20").apply?(
+      "http://example.org/occi/complex#mykind1")
+    assert ComplexModel.mod(:"http://example.org/occi/complex#mymixin20").apply?(
+      "http://example.org/occi/complex#mykind0")
+
+    assert not ComplexModel.mod(:"http://example.org/occi/complex#mymixin20").apply?(
+      "http://example.org/occi/complex#mykind2")
+  end  
 end

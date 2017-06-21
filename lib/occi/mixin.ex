@@ -38,6 +38,14 @@ defmodule OCCI.Mixin do
 	  end
 	end)
       end
+
+      def apply?(kind) do
+	kind = :"#{kind}"
+	Enum.any?(@applies, fn
+	  ^kind -> true
+	  apply -> Enum.any?(@model.mod(apply).parent!(), fn ^kind -> true; _ -> false end)
+	end)
+      end
     end
   end
 end
