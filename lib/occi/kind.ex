@@ -24,6 +24,18 @@ defmodule OCCI.Kind do
 
       def parent!, do: parent!(@parent)
 
+      @doc """
+      Creates a new entity of the kind
+      """
+      def new(attributes, mixins \\ []) do
+        entity = %{
+          id: nil,
+          kind: @category,
+          mixins: mixins,
+          attributes: %{}
+        }
+      end
+
       ###
       ### Priv
       ###
