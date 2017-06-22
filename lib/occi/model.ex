@@ -71,28 +71,27 @@ defmodule OCCI.Model do
   end
 
   defmacro kind(name, args \\ [], do_block \\ nil) do
-    model = __CALLER__.module
-
     modname = mod_name(name, args, __CALLER__)
     name = name |> to_atom
+    model = __CALLER__.module
     parent = case Keyword.get(args, :parent) do
 	       {:__aliases__, _, _}=aliases ->
 		 Macro.expand(aliases, __CALLER__).category()
 	       nil -> nil
 	       p -> :"#{p}"
 	     end
-    attributes = Keyword.get(args, :attributes, [])
+    args = [
+      {:name, name},
+      {:model, model},
+      {:parent, parent}
+      | args ]
 
     kinds = Module.get_attribute(model, :kinds)
     Module.put_attribute(model, :kinds, Map.put(kinds, name, modname))
 
     quote do
       defmodule unquote(modname) do
-        use OCCI.Kind,
-	  name: unquote(name),
-          parent: unquote(parent),
-          model: unquote(model),
-          attributes: unquote(attributes)
+        use OCCI.Kind, unquote(args)
 
 	unquote(do_block)
       end
@@ -101,12 +100,14 @@ defmodule OCCI.Model do
 
   defmacro mixin(name, args \\ []) do
     model = __CALLER__.module
-
-    modname = mod_name(name, args, __CALLER__)
     name = name |> to_atom
-    depends = Keyword.get(args, :depends, [])
-    applies = Keyword.get(args, :applies, [])
-    attributes = Keyword.get(args, :attributes, [])
+    modname = mod_name(name, args, __CALLER__)
+    args = [
+      {:name, name}, {:model, model},
+      {:depends, Keyword.get(args, :depends, [])},
+      {:applies, Keyword.get(args, :applies, [])}
+      | args ]
+
     do_block = Keyword.get(args, :do)
     
     mixins = Module.get_attribute(model, :mixins)
@@ -114,12 +115,7 @@ defmodule OCCI.Model do
 
     quote do
       defmodule unquote(modname) do
-	use OCCI.Mixin,
-	  name: unquote(name),
-	  model: unquote(model),
-	  depends: unquote(depends),
-	  applies: unquote(applies),
-	  attributes: unquote(attributes)
+	use OCCI.Mixin, unquote(args)
 
 	unquote(do_block)
       end

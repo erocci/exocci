@@ -5,29 +5,33 @@ defmodule OCCI.Category do
       fn -> raise "Missing argument: name" end)
     model = Keyword.get_lazy(opts, :model,
       fn -> raise "Missing argument: model" end)
+    title = Keyword.get_lazy(opts, :title, fn ->
+      case Keyword.get(opts, :type) do
+	:kind -> "Kind #{name}"
+	:mixin -> "Mixin #{name}"
+	_ -> "Category #{name}"
+      end
+    end)
+      
     {scheme, term} = parse_category(name)
 
     quote do
       require OCCI.Category
       import OCCI.Category
 
-      @model :"#{unquote(model)}"
+      @model unquote(model)
       
       @category unquote(name)
       @scheme unquote(scheme)
       @term unquote(term)
+      @title unquote(title)
 
       def category, do: @category
       def scheme, do: @scheme
       def term, do: @term
+      def title, do: @title
     end
   end
-
-  #def def_category(env) do
-  #  quote do
-  #    defmacro category
-  #  end
-  #end
 
   ###
   ### Priv

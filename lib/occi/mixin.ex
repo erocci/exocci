@@ -3,6 +3,8 @@ defmodule OCCI.Mixin do
     depends = Keyword.get(opts, :depends, []) |> Enum.map(&(:"#{&1}"))
     applies = Keyword.get(opts, :applies, []) |> Enum.map(&(:"#{&1}"))
 
+    opts = [ {:type, :mixin} | opts ]
+
     quote do
       use OCCI.Category, unquote(opts)
       

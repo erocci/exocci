@@ -1,6 +1,7 @@
 defmodule OCCI.Kind do
   defmacro __using__(opts) do
     parent = Keyword.get(opts, :parent)
+    opts = [ {:type, :kind} | opts ]
     
     quote do
       use OCCI.Category, unquote(opts)
