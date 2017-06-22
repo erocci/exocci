@@ -1,24 +1,11 @@
 defmodule OCCI.Kind do
   defmacro __using__(opts) do
-    model = Keyword.get_lazy(opts, :model, fn -> raise "Missing argument: model" end)
-
-    category = Keyword.get_lazy(opts, :category, fn -> raise "Missing argument: category" end)
-    {scheme, term} = OCCI.Model.parse_category(category)
-
     parent = Keyword.get(opts, :parent)
-
+    
     quote do
-      @model :"#{unquote(model)}"
-
-      @category unquote(category)
-      @scheme unquote(scheme)
-      @term unquote(term)
+      use OCCI.Category, unquote(opts)
       
       @parent unquote(parent)
-
-      def category, do: @category
-      def scheme, do: @scheme
-      def term, do: @term
 
       def parent, do: @parent
 
@@ -34,6 +21,10 @@ defmodule OCCI.Kind do
           mixins: mixins,
           attributes: %{}
         }
+	#Enum.reduce(attributes, entity, fn {key, value} ->
+	#  set(entity, key, value)
+	#end)
+	entity
       end
 
       ###

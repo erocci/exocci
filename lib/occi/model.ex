@@ -70,7 +70,7 @@ defmodule OCCI.Model do
     Module.put_attribute(__CALLER__.module, :imports, MapSet.put(imports, mod))
   end
 
-  defmacro kind(name, args \\ []) do
+  defmacro kind(name, args \\ [], do_block \\ nil) do
     model = __CALLER__.module
 
     modname = mod_name(name, args, __CALLER__)
@@ -82,7 +82,6 @@ defmodule OCCI.Model do
 	       p -> :"#{p}"
 	     end
     attributes = Keyword.get(args, :attributes, [])
-    do_block = Keyword.get(args, :do)
 
     kinds = Module.get_attribute(model, :kinds)
     Module.put_attribute(model, :kinds, Map.put(kinds, name, modname))
@@ -90,7 +89,7 @@ defmodule OCCI.Model do
     quote do
       defmodule unquote(modname) do
         use OCCI.Kind,
-	  category: unquote(name),
+	  name: unquote(name),
           parent: unquote(parent),
           model: unquote(model),
           attributes: unquote(attributes)
@@ -116,7 +115,7 @@ defmodule OCCI.Model do
     quote do
       defmodule unquote(modname) do
 	use OCCI.Mixin,
-	  category: unquote(name),
+	  name: unquote(name),
 	  model: unquote(model),
 	  depends: unquote(depends),
 	  applies: unquote(applies),
@@ -137,13 +136,6 @@ defmodule OCCI.Model do
     _ = Code.compiler_options(ignore_module_conflict: true)
     _ = Code.compile_quoted(quoted)
     :ok
-  end
-
-  def parse_category(name) do
-    case String.split("#{name}", "#") do
-      [scheme, term] -> {:"#{scheme}#", :"#{term}"}
-      _ -> raise "Invalid category: #{name}"
-    end
   end
 
   def to_atom(nil), do: nil
