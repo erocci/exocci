@@ -84,5 +84,31 @@ end
 
     assert not ComplexModel.mod(:"http://example.org/occi/complex#mymixin20").apply?(
       "http://example.org/occi/complex#mykind2")
-  end  
+  end
+
+  test "Check entity categories" do
+    assert match?([
+      :"http://example.org/occi/complex#mykind0",
+      :"http://schemas.ogf.org/occi/core#resource",
+      :"http://schemas.ogf.org/occi/core#entity"
+    ], ComplexModel.mod("http://example.org/occi/complex#mykind0").categories(
+      %{ kind: :"http://example.org/occi/complex#mykind0",
+    	 mixins: []}))
+
+    assert match?([
+      :"http://example.org/occi/complex#mymixin1",
+      :"http://example.org/occi/complex#mymixin12",
+      :"http://example.org/occi/complex#mymixin10",
+      :"http://example.org/occi/complex#mymixin0",
+      :"http://example.org/occi/complex#mymixin2",
+      :"http://example.org/occi/complex#mykind0",
+      :"http://schemas.ogf.org/occi/core#resource",
+      :"http://schemas.ogf.org/occi/core#entity"
+    ], ComplexModel.mod("http://example.org/occi/complex#mykind0").categories(
+      %{ kind: :"http://example.org/occi/complex#mykind0",
+    	 mixins: [
+	   :"http://example.org/occi/complex#mymixin1",	   
+	   :"http://example.org/occi/complex#mymixin12"
+	 ]}))
+  end
 end

@@ -1,4 +1,4 @@
-defmodule OCCI.Model do
+ defmodule OCCI.Model do
   
   @doc false
   defmacro __using__(opts) do
@@ -18,6 +18,10 @@ defmodule OCCI.Model do
       end
       
       def_user_mixins(unquote(user_mixins_mod), Map.new)
+
+      def new(kind, attributes, mixins \\ []) do
+	mod(kind).new(attributes, mixins)
+      end
 
       def kind?(name) do
 	name = :"#{name}"

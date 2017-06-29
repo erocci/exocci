@@ -15,7 +15,7 @@ defmodule OCCI.Mixin do
       def applies, do: @applies
 
       def depends! do
-	Enum.reduce(@depends, [], fn dep, acc ->
+	Enum.reduce(@depends, OCCI.OrdSet.new(), fn dep, acc ->
 	  if dep in acc do
 	    acc
 	  else

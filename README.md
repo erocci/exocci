@@ -1,7 +1,5 @@
 # Exocci
 
-**TODO: Add description**
-
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
@@ -22,3 +20,10 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
     end
     ```
 
+## TODO
+
+### Attributes
+
+* attributes aliases
+* default values
+* type: in category.ex, manage lists as enumeration

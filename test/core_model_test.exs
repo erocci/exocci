@@ -2,6 +2,7 @@ defmodule CoreModelTest do
   use ExUnit.Case
 
   test "Check entity instanciation" do
+    # Entity is abstract, can not be instantiated
     assert_raise UndefinedFunctionError, fn ->
       OCCI.Model.Core.mod("http://schemas.ogf.org/occi/core#entity").new()
     end

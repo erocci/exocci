@@ -3,23 +3,26 @@ defmodule OCCI.Model.Core do
     core: false
 
   kind "http://schemas.ogf.org/occi/core#entity", alias: Entity do
-    :ok
-    # Custom getter
-    #attr(entity, :id), do: entity.id
-    #attr(entity, :title), do: entity.attributes."occi.core.title"
-    
-    # Custom setters
-    #attr(entity, :id, id), do: %{ entity | id: OCCI.Types.URI.cast(id) }
-    #attr(%{ attributes: a }=entity, :title, title) do
-    #  %{ entity | attributes: %{ a | "occi.core.title": OCCI.Types.String.cast(title) } }
-    #end
+    attribute :id,
+      alias: :"occi.core.id",
+      get: &OCCI.Model.Core.Entity.id/1,
+      set: &OCCI.Model.Core.Entity.id/2
+
+    attribute :title,
+      alias: :"occi.core.title",
+      type: OCCI.Types.String
+      
+    def id(entity), do: entity.id
+    def id(entity, value), do: Map.put(entity, :id, OCCI.Types.URI.cast(value))
   end
 
   kind "http://schemas.ogf.org/occi/core#resource",
     parent: "http://schemas.ogf.org/occi/core#entity",
-    alias: Resource
+    alias: Resource do
+  end
   
   kind "http://schemas.ogf.org/occi/core#link",
     parent: "http://schemas.ogf.org/occi/core#entity",
-    alias: Link
+    alias: Link do
+  end
 end
