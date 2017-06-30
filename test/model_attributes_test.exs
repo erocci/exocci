@@ -30,4 +30,20 @@ defmodule ModelAttributesTest do
       OCCI.Model.Core.Resource.new(%{ title: "A title" })
     end
   end
+
+  defmodule TestModel do
+    use OCCI.Model
+
+    kind "http://example.org/occi#kind0",
+      parent: "http://schemas.ogf.org/occi/core#resource" do
+      attribute "attr0",
+	default: 10,
+	type: OCCI.Types.Integer
+    end
+  end
+
+  test "Default attribute values" do
+    res = TestModel.new("http://example.org/occi#kind0", %{ id: "/an_id" })
+    assert match?(10, OCCI.Model.Core.Resource.get(res, "attr0"))
+  end
 end

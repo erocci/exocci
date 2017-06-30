@@ -37,3 +37,17 @@ defmodule OCCI.Types.Kind do
     end
   end
 end
+
+defmodule OCCI.Types.Integer do
+  use OCCI.Types
+  def cast(v, _) when is_integer(v) do
+    v
+  end
+  def cast(v, _) when is_binary(v) do
+    case Integer.parse(v) do
+      :error -> raise OCCI.Error, {422, "Invalid integer: #{v}"}
+      {i, ""} -> i
+      _ -> raise OCCI.Error, {422, "Invalid integer: #{v}"}
+    end
+  end
+end

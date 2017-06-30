@@ -75,7 +75,7 @@ defmodule OCCI.Category do
     
     clauses = Enum.reduce(specs, [], fn spec, acc ->
       name = Keyword.get(spec, :name)
-      getter = getter(name, Keyword.get(spec, :get))
+      getter = getter(name, Keyword.get(spec, :get), Keyword.get(spec, :default))
       setter = setter(name, Keyword.get(spec, :set), Keyword.get(spec, :type))
       
       acc = [ {getter, setter} | acc ]
@@ -106,14 +106,14 @@ defmodule OCCI.Category do
     end
   end
 
-  def getter(name, nil) do
+  def getter(name, nil, default) do
     quote do
       def __get__(entity, unquote(name)) do
-	Map.get(entity.attributes, unquote(name))
+	Map.get(entity.attributes, unquote(name), unquote(default))
       end
     end
   end
-  def getter(name, custom) do
+  def getter(name, custom, _) do
     quote do
       def __get__(entity, unquote(name)) do
 	unquote(custom).(entity)
@@ -131,16 +131,18 @@ defmodule OCCI.Category do
     raise OCCI.Error, {422, "Invalid attribute specification: #{name}. You must specifiy either type or custom setter"}
   end
   def setter(name, nil, type) do
-    if is_occi_type(type) do
-      quote do
-	def __set__(entity, unquote(name), value) do
-	  attributes = Map.put(entity.attributes,
-	    unquote(name), unquote(type).cast(value))
-	  %{ entity | attributes: attributes }
-	end
+    {typemod, opts} = occi_type(type)
+    quote do
+      def __set__(entity, unquote(name), value) do
+	casted = try do
+		   unquote(typemod).cast(value, unquote(opts))
+		 rescue
+		   e in FunctionClauseError ->
+		     raise OCCI.Error, {422, "Invalid value: #{inspect value}"}
+		 end
+	attributes = Map.put(entity.attributes, unquote(name), casted)
+	%{ entity | attributes: attributes }
       end
-    else
-      raise OCCI.Error, {422, "#{type} do not implements OCCI.Types behaviour"}
     end
   end
   def setter(name, custom, _) do
@@ -157,10 +159,21 @@ defmodule OCCI.Category do
     end
   end
 
-  defp is_occi_type(type) do
+  defp occi_type(type) when is_list(type) do
+    {OCCI.Types.Enum, type}
+  end
+  defp occi_type({type, opts}) do
     case Code.ensure_loaded(type) do
-      {:module, _} -> function_exported?(type, :cast, 1) || function_exported?(type, :cast, 2)
+      {:module, _} ->
+	if function_exported?(type, :cast, 1) || function_exported?(type, :cast, 2) do
+	  {type, opts}
+	else
+	  raise OCCI.Error, {422, "#{type} do not implements OCCI.Types behaviour"}
+	end
       _ -> raise OCCI.Error, {422, "Unknown OCCI type: #{type}"}
     end
+  end    
+  defp occi_type(type) when is_atom(type) do
+    occi_type({type, []})
   end
 end
