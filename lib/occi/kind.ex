@@ -65,7 +65,11 @@ defmodule OCCI.Kind do
 	  end
 	end)
 	kind = Map.get(entity, :kind)
-	Enum.reverse(depends) ++ [ kind | mod(entity, kind).parent!() ]
+	parents = case mod(entity, kind) do
+		    nil -> []
+		    mod -> mod.parent!()
+		  end
+	Enum.reverse(depends) ++ [ kind | parents ]
       end
       
       ###
@@ -101,7 +105,9 @@ defmodule OCCI.Kind do
       end
 
       defp parent!(nil), do: []
-      defp parent!(parent), do: OCCI.OrdSet.merge(@model.mod(parent).parent!(), [ parent ])
+      defp parent!(parent) do
+	OCCI.OrdSet.add(@model.mod(parent).parent!(), parent)
+      end
     end
   end
 end

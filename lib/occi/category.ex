@@ -60,12 +60,18 @@ defmodule OCCI.Category do
       end
     end
     
-    clauses = Enum.map(specs, fn spec ->
+    clauses = Enum.reduce(specs, [], fn spec, acc ->
       name = Keyword.get(spec, :name)
       getter = getter(name, Keyword.get(spec, :get))
       setter = setter(name, Keyword.get(spec, :set), Keyword.get(spec, :type))
       
-      {getter, setter}
+      acc = [ {getter, setter} | acc ]
+
+      case Keyword.get(spec, :alias) do
+	nil -> acc
+	alias_ ->
+	  [ {getter_alias(name, alias_), setter_alias(name, alias_)} | acc ]
+      end
     end)
 
     for {getter, _} <- clauses do
@@ -102,6 +108,12 @@ defmodule OCCI.Category do
     end
   end
 
+  defp getter_alias(name, alias_) do
+    quote do
+      def __get__(entity, unquote(alias_)), do: __get__(entity, unquote(name))
+    end
+  end
+
   defp setter(name, nil, nil) do
     raise OCCI.Error, {400, "Invalid attribute specification: #{name}. You must specifiy either type or custom setter"}
   end
@@ -123,6 +135,12 @@ defmodule OCCI.Category do
       def __set__(entity, unquote(name), value) do
 	unquote(custom).(entity, value)
       end
+    end
+  end
+
+  defp setter_alias(name, alias_) do
+    quote do
+      def __set__(entity, unquote(alias_), value), do: __set__(entity, unquote(name), value)
     end
   end
 

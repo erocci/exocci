@@ -8,8 +8,8 @@ defmodule OCCI.Model.Core do
       get: &OCCI.Model.Core.Entity.id/1,
       set: &OCCI.Model.Core.Entity.id/2
 
-    attribute :title,
-      alias: :"occi.core.title",
+    attribute :"occi.core.title",
+      alias: :title,
       type: OCCI.Types.String
       
     def id(entity), do: entity.id
