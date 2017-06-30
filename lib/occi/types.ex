@@ -6,6 +6,27 @@ defmodule OCCI.Types do
   end
 
   @callback cast(data :: any, opts :: term) :: any
+
+  @doc """
+  Return {module, opts}
+  """
+  def check(type) when is_list(type) do
+    {OCCI.Types.Enum, type}
+  end
+  def check({type, opts}) do
+    case Code.ensure_loaded(type) do
+      {:module, _} ->
+	if function_exported?(type, :cast, 1) || function_exported?(type, :cast, 2) do
+	  {type, opts}
+	else
+	  raise OCCI.Error, {422, "#{type} do not implements OCCI.Types behaviour"}
+	end
+      _ -> raise OCCI.Error, {422, "Unknown OCCI type: #{type}"}
+    end
+  end    
+  def check(type) when is_atom(type) do
+    check({type, []})
+  end
 end
 
 defmodule OCCI.Types.String do

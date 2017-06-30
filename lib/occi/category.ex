@@ -61,7 +61,7 @@ defmodule OCCI.Category do
     specs = Enum.reduce(Module.get_attribute(__CALLER__.module, :attributes), [], fn spec, acc ->
       case Keyword.get(spec, :type) do
 	nil -> [ spec | acc ]
-	type -> [ Keyword.put(spec, :check, check(type)) | acc ]
+	type -> [ Keyword.put(spec, :check, OCCI.Types.check(type)) | acc ]
       end
     end)
     
@@ -161,23 +161,5 @@ defmodule OCCI.Category do
     quote do
       def __set__(entity, unquote(alias_), value), do: __set__(entity, unquote(name), value)
     end
-  end
-
-  defp check(type) when is_list(type) do
-    {OCCI.Types.Enum, type}
-  end
-  defp check({type, opts}) do
-    case Code.ensure_loaded(type) do
-      {:module, _} ->
-	if function_exported?(type, :cast, 1) || function_exported?(type, :cast, 2) do
-	  {type, opts}
-	else
-	  raise OCCI.Error, {422, "#{type} do not implements OCCI.Types behaviour"}
-	end
-      _ -> raise OCCI.Error, {422, "Unknown OCCI type: #{type}"}
-    end
-  end    
-  defp check(type) when is_atom(type) do
-    check({type, []})
   end
 end
