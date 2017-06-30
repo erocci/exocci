@@ -10,11 +10,12 @@ defmodule CoreModelTest do
 
   test "Check resource instanciation" do
     assert match?(%{ kind: :"http://schemas.ogf.org/occi/core#resource" },
-      OCCI.Model.Core.mod("http://schemas.ogf.org/occi/core#resource").new(%{}))
+      OCCI.Model.Core.mod("http://schemas.ogf.org/occi/core#resource").new(%{ id: "an id"}))
   end
 
   test "Check link instanciation" do
     assert match?(%{ kind: :"http://schemas.ogf.org/occi/core#link" },
-      OCCI.Model.Core.mod("http://schemas.ogf.org/occi/core#link").new(%{}))
+      OCCI.Model.Core.mod("http://schemas.ogf.org/occi/core#link").new(%{
+	    id: "an id", source: "/source", target: "/target" }))
   end
 end

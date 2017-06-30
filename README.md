@@ -24,6 +24,5 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 
 ### Attributes
 
-* attributes aliases
 * default values
 * type: in category.ex, manage lists as enumeration

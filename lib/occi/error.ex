@@ -24,5 +24,6 @@ defmodule OCCI.Error do
 
   defp to_msg(404), do: "Entity not found"
   defp to_msg(409), do: "Conflict"
+  defp to_msg(422), do: "Unprocessable entity"
   defp to_msg(_), do: "Internal error"
 end

@@ -25,9 +25,10 @@ defmodule OCCI.Kind do
 	    model: @model
 	  }
         }
-	Enum.reduce(attributes, entity, fn {key, value}, acc ->
+	entity = Enum.reduce(attributes, entity, fn {key, value}, acc ->
 	  set(acc, key, value)
 	end)
+	complete(entity)
       end
 
       def get(entity, key) when is_atom(key) do
@@ -71,7 +72,7 @@ defmodule OCCI.Kind do
 		  end
 	Enum.reverse(depends) ++ [ kind | parents ]
       end
-      
+
       ###
       ### Priv
       ###
@@ -79,8 +80,33 @@ defmodule OCCI.Kind do
 	model = get_in(entity, [:__internal__, :model]) || @model
 	model.mod(name)
       end
+
+      # raise OCCI.Error if missing attributes, else return entity
+      defp complete(entity) do
+	case missing_attributes(entity) do
+	  [] -> entity
+	  ids ->
+	    names = Enum.join(ids, " ")
+	    raise OCCI.Error, {422, "Missing attributes: #{names}"}
+	end
+      end
+
+      defp missing_attributes(entity) do
+	Enum.reduce(categories(entity), [], fn cat, acc0 ->
+	  case mod(entity, cat) do
+	    nil -> acc0
+	    mod ->
+	      Enum.reduce(mod.required(), acc0, fn id, acc1 ->
+		case OCCI.Model.Core.Entity.get(entity, id) do
+		  nil -> [ id | acc1 ]
+		  _ -> acc1
+		end
+	      end)
+	  end
+	end)
+      end
       
-      defp __get__(entity, key, []), do: raise OCCI.Error, {400, "Undefined attribute: #{key}"}
+      defp __get__(entity, key, []), do: raise OCCI.Error, {422, "Undefined attribute: #{key}"}
       defp __get__(entity, key, [ cat | categories ]) do
 	try do
 	  mod(entity, cat).__get__(entity, key)
@@ -92,10 +118,11 @@ defmodule OCCI.Kind do
 	end
       end
 
-      defp __set__(entity, key, value, []), do: raise OCCI.Error, {400, "Undefined attribute: #{key}"}
+      defp __set__(entity, key, value, []), do: raise OCCI.Error, {422, "Undefined attribute: #{key}"}
       defp __set__(entity, key, value, [ cat | categories ]) do
 	try do
-	  mod(entity, cat).__set__(entity, key, value)
+	  mod = mod(entity, cat)
+	  mod.__set__(entity, key, value)
 	rescue
 	  e in FunctionClauseError ->
 	    __set__(entity, key, value, categories)

@@ -1,6 +1,6 @@
 defmodule ModelAttributesTest do
   use ExUnit.Case
-
+  
   test "Check Core attributes" do
     assert match?(
       %{ id: "/an_id", attributes: %{ "occi.core.title": "A title" } },
@@ -22,5 +22,12 @@ defmodule ModelAttributesTest do
     assert match?("A title",
       OCCI.Model.Core.Entity.get(%{ kind: :"http://schemas.ogf.org/occi/core#resource",
 				    attributes: %{ "occi.core.title": "A title" } }, :title))
+  end
+
+  test "Required attributes" do
+    assert_raise OCCI.Error, "Missing attributes: id",
+    fn ->
+      OCCI.Model.Core.Resource.new(%{ title: "A title" })
+    end
   end
 end
