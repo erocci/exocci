@@ -58,12 +58,17 @@ defmodule OCCI.Category do
   end
   
   defmacro __before_compile__(_opts) do
-    specs = Module.get_attribute(__CALLER__.module, :attributes)
-
-    requires = Enum.reduce(specs, MapSet.new, fn spec, acc ->
+    specs = Enum.reduce(Module.get_attribute(__CALLER__.module, :attributes), [], fn spec, acc ->
       case Keyword.get(spec, :type) do
+	nil -> [ spec | acc ]
+	type -> [ Keyword.put(spec, :check, check(type)) | acc ]
+      end
+    end)
+    
+    requires = Enum.reduce(specs, MapSet.new, fn spec, acc ->
+      case Keyword.get(spec, :check) do
 	nil -> acc
-	type -> MapSet.put(acc, type)
+	{typemod, _} -> MapSet.put(acc, typemod)
       end
     end)
     ast = for mod <- requires do
@@ -76,7 +81,7 @@ defmodule OCCI.Category do
     clauses = Enum.reduce(specs, [], fn spec, acc ->
       name = Keyword.get(spec, :name)
       getter = getter(name, Keyword.get(spec, :get), Keyword.get(spec, :default))
-      setter = setter(name, Keyword.get(spec, :set), Keyword.get(spec, :type))
+      setter = setter(name, Keyword.get(spec, :set), Keyword.get(spec, :check))
       
       acc = [ {getter, setter} | acc ]
 
@@ -130,8 +135,7 @@ defmodule OCCI.Category do
   def setter(name, nil, nil) do
     raise OCCI.Error, {422, "Invalid attribute specification: #{name}. You must specifiy either type or custom setter"}
   end
-  def setter(name, nil, type) do
-    {typemod, opts} = occi_type(type)
+  def setter(name, nil, {typemod, opts}) do
     quote do
       def __set__(entity, unquote(name), value) do
 	casted = try do
@@ -159,10 +163,10 @@ defmodule OCCI.Category do
     end
   end
 
-  defp occi_type(type) when is_list(type) do
+  defp check(type) when is_list(type) do
     {OCCI.Types.Enum, type}
   end
-  defp occi_type({type, opts}) do
+  defp check({type, opts}) do
     case Code.ensure_loaded(type) do
       {:module, _} ->
 	if function_exported?(type, :cast, 1) || function_exported?(type, :cast, 2) do
@@ -173,7 +177,7 @@ defmodule OCCI.Category do
       _ -> raise OCCI.Error, {422, "Unknown OCCI type: #{type}"}
     end
   end    
-  defp occi_type(type) when is_atom(type) do
-    occi_type({type, []})
+  defp check(type) when is_atom(type) do
+    check({type, []})
   end
 end

@@ -39,6 +39,18 @@ defmodule ModelAttributesTest do
       attribute "attr0",
 	default: 10,
 	type: OCCI.Types.Integer
+
+      attribute "attr1",
+	type: [:un, :deux, :trois]
+    end
+  end
+
+  test "Enum attributes" do 
+    assert match?(%{ attributes: %{ attr1: :trois }},
+      TestModel.new("http://example.org/occi#kind0", %{ id: "/an_id", attr1: :trois}))
+    
+    assert_raise OCCI.Error, ~r/^Invalid value:.*$/, fn ->
+      TestModel.new("http://example.org/occi#kind0", %{ id: "/an_id", attr1: :quatre})
     end
   end
 

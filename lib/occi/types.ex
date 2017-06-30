@@ -51,3 +51,30 @@ defmodule OCCI.Types.Integer do
     end
   end
 end
+
+defmodule OCCI.Types.Float do
+  use OCCI.Types
+  def cast(v, _) when is_float(v) do
+    v
+  end
+  def cast(v, _) when is_binary(v) do
+    case Float.parse(v) do
+      :error -> raise OCCI.Error, {422, "Invalid float: #{v}"}
+      {i, ""} -> i
+      _ -> raise OCCI.Error, {422, "Invalid float: #{v}"}
+    end
+  end
+end
+
+
+defmodule OCCI.Types.Enum do
+  use OCCI.Types
+  def cast(v, values) do
+    val = :"#{v}"
+    if val in values do
+      val
+    else
+      raise OCCI.Error, {422, "Invalid value: #{v} not in #{inspect values}"}
+    end
+  end
+end

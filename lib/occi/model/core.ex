@@ -40,7 +40,7 @@ defmodule OCCI.Model.Core do
       get: &OCCI.Model.Core.Link.target/1,
       set: &OCCI.Model.Core.Link.target/2
 
-    attribute :target,
+    attribute :target_kind,
       get: &OCCI.Model.Core.Link.target_kind/1,
       set: &OCCI.Model.Core.Link.target_kind/2
 
@@ -59,7 +59,7 @@ defmodule OCCI.Model.Core do
     def target_kind(link), do: get_in(link, [:target, :kind])
     def target_kind(link, kind) do
       target = Map.get(link, :target, %{})
-      casted = OCCI.Types.Kind.cast(get_in(link, [:__internal__, :model]) || @model, kind)
+      casted = OCCI.Types.Kind.cast(kind, get_in(link, [:__internal__, :model]) || @model)
       Map.put(link, :target, Map.put(target, :kind, casted))
     end
   end
