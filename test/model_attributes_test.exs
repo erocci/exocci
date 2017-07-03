@@ -43,6 +43,21 @@ defmodule ModelAttributesTest do
       attribute "attr1",
 	type: [:un, :deux, :trois]
     end
+
+    mixin "http://example.org/occi#mixin0" do
+      attribute "attr0",
+	default: 11,
+	type: OCCI.Types.Integer
+    end
+
+    mixin "http://example.org/occi#mixin1" do
+      attribute "attr0",
+	default: 12,
+	type: OCCI.Types.Integer
+    end
+
+    mixin "http://example.org/occi#mixin2",
+      depends: ["http://example.org/occi#mixin1"]
   end
 
   test "Enum attributes" do 
@@ -57,5 +72,20 @@ defmodule ModelAttributesTest do
   test "Default attribute values" do
     res = TestModel.new("http://example.org/occi#kind0", %{ id: "/an_id" })
     assert match?(10, OCCI.Model.Core.Resource.get(res, "attr0"))
+  end
+
+  test "Default value with(out) mixins" do
+    # Default value without mixin
+    res = TestModel.new("http://example.org/occi#kind0", %{ id: "/an_id" })
+    assert match?(10, OCCI.Model.Core.Resource.get(res, "attr0"))
+
+    # Default value with mixin
+    res = OCCI.Model.Core.Entity.add_mixin(res, "http://example.org/occi#mixin0")
+    assert match?(11, OCCI.Model.Core.Resource.get(res, "attr0"))
+
+    # Default value with mixin deps
+    res = OCCI.Model.Core.Entity.add_mixin(res, "http://example.org/occi#mixin2")
+    assert match?(12, OCCI.Model.Core.Resource.get(res, "attr0"))
+
   end
 end

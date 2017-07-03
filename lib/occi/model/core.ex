@@ -15,6 +15,14 @@ defmodule OCCI.Model.Core do
       
     def id(entity), do: entity.id
     def id(entity, value), do: Map.put(entity, :id, OCCI.Types.URI.cast(value))
+
+    def add_mixin(entity, mixin) do
+      Map.put(entity, :mixins, [ :"#{mixin}" | Map.get(entity, :mixins, []) ])
+    end
+
+    def rm_mixin(entity, mixin) do
+      Map.put(entity, :mixins, List.delete(Map.get(entity, :mixins, []), :"#{mixin}"))
+    end
   end
 
   kind "http://schemas.ogf.org/occi/core#resource",
@@ -24,6 +32,9 @@ defmodule OCCI.Model.Core do
     attribute "occi.core.summary",
       alias: :summary,
       type: OCCI.Types.String
+
+    defdelegate add_mixin(entity, mixin), to: Entity
+    defdelegate rm_mixin(entity, mixin), to: Entity
   end
   
   kind "http://schemas.ogf.org/occi/core#link",
@@ -62,5 +73,8 @@ defmodule OCCI.Model.Core do
       casted = OCCI.Types.Kind.cast(kind, get_in(link, [:__internal__, :model]) || @model)
       Map.put(link, :target, Map.put(target, :kind, casted))
     end
+
+    defdelegate add_mixin(entity, mixin), to: Entity
+    defdelegate rm_mixin(entity, mixin), to: Entity
   end
 end

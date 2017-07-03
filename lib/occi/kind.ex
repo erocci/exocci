@@ -19,7 +19,7 @@ defmodule OCCI.Kind do
         entity = %{
           id: nil,
           kind: @category,
-          mixins: mixins,
+          mixins: Enum.map(mixins, &(:"#{&1}")),
           attributes: %{},
 	  __internal__: %{
 	    model: @model
