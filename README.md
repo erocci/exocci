@@ -24,8 +24,4 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 
 ### Attributes
 
-* type: in category.ex, manage lists as enumeration
-
 ### Categories
-
-add/remove mixins dynamically

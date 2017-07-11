@@ -7,13 +7,14 @@ defmodule OCCI.Category do
       fn -> raise "Missing argument: model" end)
     title = Keyword.get_lazy(opts, :title, fn ->
       case Keyword.get(opts, :type) do
-	:kind -> "Kind #{name}"
-	:mixin -> "Mixin #{name}"
-	_ -> "Category #{name}"
+	      :kind -> "Kind #{name}"
+	      :mixin -> "Mixin #{name}"
+        :action -> "Action #{name}"
+	      _ -> "Category #{name}"
       end
     end)
-      
-    {scheme, term} = parse_category(name)
+    attr_specs = Keyword.get(opts, :attributes, [])
+    {scheme, term} = OCCI.Category.Helpers.parse_category(name)
 
     Module.put_attribute(__CALLER__.module, :attributes, [])
     Module.put_attribute(__CALLER__.module, :required, [])
@@ -23,143 +24,57 @@ defmodule OCCI.Category do
       import OCCI.Category
 
       @model unquote(model)
-      
+
       @category unquote(name)
       @scheme unquote(scheme)
       @term unquote(term)
       @title unquote(title)
 
+      for {name, spec} <- unquote(attr_specs) do
+	      name = :"#{name}"
+	      spec = [ {:name, name} | spec ]
+	      Module.put_attribute(__MODULE__, :attributes,
+	        [ spec | Module.get_attribute(__MODULE__, :attributes) ])
+
+	      if Keyword.get(spec, :required, false) do
+	        Module.put_attribute(__MODULE__, :required,
+	          [ name | Module.get_attribute(__MODULE__, :required) ])
+	      end
+      end
+
       def category, do: @category
-      def scheme, do: @scheme
+      def scheme, do: :"#{@scheme}#"
       def term, do: @term
       def title, do: @title
       def required, do: @required
-      
-      @before_compile OCCI.Category
     end
   end
 
   defmacro attribute(name, opts) do
-    spec = [ {:name, :"#{name}"} | opts ]
+    name = :"#{name}"
+    spec = [ {:name, name} | opts ]
 
     ast = quote do
       Module.put_attribute(__MODULE__, :attributes,
-	[ unquote(spec) | Module.get_attribute(__MODULE__, :attributes) ])
+	      [ unquote(spec) | Module.get_attribute(__MODULE__, :attributes) ])
     end
     Module.eval_quoted(__CALLER__.module, ast)
 
     if Keyword.get(opts, :required, false) do
       ast = quote do
-	Module.put_attribute(__MODULE__, :required,
-	  [ unquote(name) | Module.get_attribute(__MODULE__, :required) ])
+	      Module.put_attribute(__MODULE__, :required,
+	        [ unquote(name) | Module.get_attribute(__MODULE__, :required) ])
       end
       Module.eval_quoted __CALLER__.module, ast
     end
   end
-  
-  defmacro __before_compile__(_opts) do
-    specs = Enum.reduce(Module.get_attribute(__CALLER__.module, :attributes), [], fn spec, acc ->
-      case Keyword.get(spec, :type) do
-	nil -> [ spec | acc ]
-	type -> [ Keyword.put(spec, :check, OCCI.Types.check(type)) | acc ]
-      end
-    end)
-    
-    requires = Enum.reduce(specs, MapSet.new, fn spec, acc ->
-      case Keyword.get(spec, :check) do
-	nil -> acc
-	{typemod, _} -> MapSet.put(acc, typemod)
-      end
-    end)
-    ast = for mod <- requires do
-      quote do
-	require unquote(mod)
-      end
-    end
-    Module.eval_quoted __CALLER__.module, ast
-    
-    clauses = Enum.reduce(specs, [], fn spec, acc ->
-      name = Keyword.get(spec, :name)
-      getter = getter(name, Keyword.get(spec, :get), Keyword.get(spec, :default))
-      setter = setter(name, Keyword.get(spec, :set), Keyword.get(spec, :check))
-      
-      acc = [ {getter, setter} | acc ]
 
-      case Keyword.get(spec, :alias) do
-	nil -> acc
-	alias_ ->
-	  [ {getter_alias(name, alias_), setter_alias(name, alias_)} | acc ]
-      end
-    end)
-
-    for {getter, _} <- clauses do
-      Module.eval_quoted(__CALLER__.module, getter)
-    end
-
-    for {_, setter} <- clauses do
-      Module.eval_quoted(__CALLER__.module, setter)
-    end
+  defmacro action({name, _, [_, _]=args}, opts, do_block) do
+    spec = {:"#{name}", args, opts, do_block}
+    Module.put_attribute(__CALLER__.module, :actions,
+      [ spec | Module.get_attribute(__CALLER__.module, :actions) ])
   end
-
-  ###
-  ### Priv
-  ###
-  defp parse_category(name) do
-    case String.split("#{name}", "#") do
-      [scheme, term] -> {:"#{scheme}#", :"#{term}"}
-      _ -> raise OCCI.Error, {422, "Invalid category: #{name}"}
-    end
-  end
-
-  def getter(name, nil, default) do
-    quote do
-      def __get__(entity, unquote(name)) do
-	Map.get(entity.attributes, unquote(name), unquote(default))
-      end
-    end
-  end
-  def getter(name, custom, _) do
-    quote do
-      def __get__(entity, unquote(name)) do
-	unquote(custom).(entity)
-      end
-    end
-  end
-
-  def getter_alias(name, alias_) do
-    quote do
-      def __get__(entity, unquote(alias_)), do: __get__(entity, unquote(name))
-    end
-  end
-
-  def setter(name, nil, nil) do
-    raise OCCI.Error, {422, "Invalid attribute specification: #{name}. You must specifiy either type or custom setter"}
-  end
-  def setter(name, nil, {typemod, opts}) do
-    quote do
-      def __set__(entity, unquote(name), value) do
-	casted = try do
-		   unquote(typemod).cast(value, unquote(opts))
-		 rescue
-		   e in FunctionClauseError ->
-		     raise OCCI.Error, {422, "Invalid value: #{inspect value}"}
-		 end
-	attributes = Map.put(entity.attributes, unquote(name), casted)
-	%{ entity | attributes: attributes }
-      end
-    end
-  end
-  def setter(name, custom, _) do
-    quote do
-      def __set__(entity, unquote(name), value) do
-	unquote(custom).(entity, value)
-      end
-    end
-  end
-
-  def setter_alias(name, alias_) do
-    quote do
-      def __set__(entity, unquote(alias_), value), do: __set__(entity, unquote(name), value)
-    end
+  defmacro action({_, _, args}, _, _) do
+    raise "Action signature expects 2 arguments, found #{length(args)}"
   end
 end

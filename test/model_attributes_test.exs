@@ -1,6 +1,6 @@
 defmodule ModelAttributesTest do
   use ExUnit.Case
-  
+
   test "Check Core attributes" do
     assert match?(
       %{ id: "/an_id", attributes: %{ "occi.core.title": "A title" } },
@@ -21,7 +21,7 @@ defmodule ModelAttributesTest do
 
     assert match?("A title",
       OCCI.Model.Core.Entity.get(%{ kind: :"http://schemas.ogf.org/occi/core#resource",
-				    attributes: %{ "occi.core.title": "A title" } }, :title))
+				                            attributes: %{ "occi.core.title": "A title" } }, :title))
   end
 
   test "Required attributes" do
@@ -37,20 +37,20 @@ defmodule ModelAttributesTest do
     kind "http://example.org/occi#kind0",
       parent: "http://schemas.ogf.org/occi/core#resource",
       attributes: [
-	attr0: [default: 10, type: OCCI.Types.Integer],
-	attr1: [type: [:un, :deux, :trois]]
+	      attr0: [default: 10, type: OCCI.Types.Integer],
+	      attr1: [type: [:un, :deux, :trois]]
       ]
 
     mixin "http://example.org/occi#mixin0" do
       attribute "attr0",
-	default: 11,
-	type: OCCI.Types.Integer
+	      default: 11,
+	      type: OCCI.Types.Integer
     end
 
     mixin "http://example.org/occi#mixin1" do
       attribute "attr0",
-	default: 12,
-	type: OCCI.Types.Integer
+	      default: 12,
+	      type: OCCI.Types.Integer
     end
 
     mixin "http://example.org/occi#mixin2",
@@ -60,7 +60,7 @@ defmodule ModelAttributesTest do
   test "Enum attributes" do
     assert match?(%{ attributes: %{ attr1: :trois }},
       ModelAttributesModel.new("http://example.org/occi#kind0", %{ id: "/an_id", attr1: :trois}))
-    
+
     assert_raise OCCI.Error, ~r/^Invalid value:.*$/, fn ->
       ModelAttributesModel.new("http://example.org/occi#kind0", %{ id: "/an_id", attr1: :quatre})
     end

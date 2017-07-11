@@ -6,7 +6,7 @@ defmodule ComplexModelTest do
 
     kind "http://example.org/occi/complex#mykind0",
       parent: OCCI.Model.Core.Resource
-    
+
     kind "http://example.org/occi/complex#mykind1",
       parent: "http://example.org/occi/complex#mykind0"
 
@@ -15,7 +15,7 @@ defmodule ComplexModelTest do
     mixin "http://example.org/occi/complex#mymixin0"
 
     mixin "http://example.org/occi/complex#mymixin1"
-    
+
     mixin "http://example.org/occi/complex#mymixin2"
 
     mixin "http://example.org/occi/complex#mymixin10",
@@ -26,15 +26,15 @@ defmodule ComplexModelTest do
 
     mixin "http://example.org/occi/complex#mymixin12",
       depends: [
-	"http://example.org/occi/complex#mymixin10",
-	"http://example.org/occi/complex#mymixin0",
-	"http://example.org/occi/complex#mymixin2"
+	      "http://example.org/occi/complex#mymixin10",
+	      "http://example.org/occi/complex#mymixin0",
+	      "http://example.org/occi/complex#mymixin2"
       ]
 
     mixin "http://example.org/occi/complex#mymixin20",
       applies: [ "http://example.org/occi/complex#mykind1" ]
-end
-  
+  end
+
   test "Creates model" do
     assert ComplexModel.kind?(:"http://example.org/occi/complex#mykind0")
     assert ComplexModel.kind?(:"http://example.org/occi/complex#mykind1")
@@ -72,7 +72,7 @@ end
       :"http://example.org/occi/complex#mymixin10",
       :"http://example.org/occi/complex#mymixin0",
       :"http://example.org/occi/complex#mymixin1",
-      :"http://example.org/occi/complex#mymixin2"      
+      :"http://example.org/occi/complex#mymixin2"
     ], ComplexModel.mod(:"http://example.org/occi/complex#mymixin12").depends!())
   end
 
@@ -93,7 +93,7 @@ end
       :"http://schemas.ogf.org/occi/core#entity"
     ], ComplexModel.mod("http://example.org/occi/complex#mykind0").categories(
       %{ kind: :"http://example.org/occi/complex#mykind0",
-    	 mixins: []}))
+    	   mixins: []}))
 
     assert match?([
       :"http://example.org/occi/complex#mymixin1",
@@ -106,9 +106,9 @@ end
       :"http://schemas.ogf.org/occi/core#entity"
     ], ComplexModel.mod("http://example.org/occi/complex#mykind0").categories(
       %{ kind: :"http://example.org/occi/complex#mykind0",
-    	 mixins: [
-	   :"http://example.org/occi/complex#mymixin1",	   
-	   :"http://example.org/occi/complex#mymixin12"
-	 ]}))
+    	   mixins: [
+	         :"http://example.org/occi/complex#mymixin1",
+	         :"http://example.org/occi/complex#mymixin12"
+	       ]}))
   end
 end
