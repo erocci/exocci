@@ -61,20 +61,28 @@ end
 
 defmodule OCCI.Types.Integer do
   use OCCI.Types
-  def cast(v, _) when is_integer(v) do
-    v
+  def cast(v, opts \\ nil)
+  def cast(v, opts) when is_integer(v) do
+    range(v, Keyword.get(opts, :min), Keyword.get(opts, :max))
   end
-  def cast(v, _) when is_binary(v) do
+  def cast(v, opts) when is_binary(v) do
     case Integer.parse(v) do
       :error -> raise OCCI.Error, {422, "Invalid integer: #{v}"}
-      {i, ""} -> i
+      {i, ""} -> range(i, Keyword.get(opts, :min), Keyword.get(opts, :max))
       _ -> raise OCCI.Error, {422, "Invalid integer: #{v}"}
     end
   end
+
+  defp range(i, nil, nil), do: i
+  defp range(i, min, nil) when i >= min, do: i
+  defp range(i, nil, max) when i <= max, do: i
+  defp range(i, min, max) when i >= min and i <= max, do: i
+  defp range(i, min, max), do: raise OCCI.Error, {422, "Not in range(#{inspect min}, #{inspect max}): #{i}"}
 end
 
 defmodule OCCI.Types.Float do
   use OCCI.Types
+  def cast(v, opts \\ nil)
   def cast(v, _) when is_float(v) do
     v
   end
@@ -102,10 +110,23 @@ end
 
 defmodule OCCI.Types.CIDR do
   use OCCI.Types
-  def cast(v, _) do
-    case :inet.parse_address('#{v}') do
-      {:ok, cidr} -> cidr
-      _ -> raise OCCI.Error, {422, "Invalid CIDR: #{inspect v}"}
+  def cast(v, _ \\ nil) do
+    case String.split("#{v}", "/") do
+      [addr] ->
+        case :inet.parse_address('#{addr}') do
+          {:ok, cidr} when tuple_size(cidr) == 4 -> {cidr, 32}
+          {:ok, cidr} when tuple_size(cidr) == 8 -> {cidr, 128}
+          {:ok, }
+          _ -> raise OCCI.Error, {422, "Invalid CIDR: #{inspect v}"}
+        end
+      [addr, netmask] ->
+        case :inet.parse_address('#{addr}') do
+          {:ok, cidr} when tuple_size(cidr) == 4 ->
+            {cidr, OCCI.Types.Integer.cast(netmask, min: 0, max: 32)}
+          {:ok, cidr} when tuple_size(cidr) == 8 ->
+            {cidr, OCCI.Types.Integer.cast(netmask, min: 0, max: 128)}
+          _ -> raise OCCI.Error, {422, "Invalid CIDR: #{inspect v}"}
+        end
     end
   end
 end
