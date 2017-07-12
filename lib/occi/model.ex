@@ -73,7 +73,7 @@ defmodule OCCI.Model do
     end
   end
 
-  defmacro import_model(name) do
+  defmacro extends(name) do
     mod = Macro.expand(name, __CALLER__)
     imports = Module.get_attribute(__CALLER__.module, :imports)
     Module.put_attribute(__CALLER__.module, :imports, MapSet.put(imports, mod))
