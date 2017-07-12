@@ -1,24 +1,51 @@
 defmodule OCCI.Error do
   defexception [:message, :log, :code]
 
+  def exception({_backend, _state, code}) when code < 500 do
+    exc(code, to_msg(code))
+  end
+  def exception({backend, state, code}) when is_integer(code) do
+    msg = to_msg(code)
+    log = """
+    OCCI backend #{inspect backend}: #{msg}
+
+    State:
+    #{inspect state}
+    """
+    exc(code, msg, log)
+  end
+  def exception({backend, state, reason}) do
+    log = """
+    OCCI backend #{inspect backend}: #{reason}
+
+    State:
+    #{inspect state}
+    """
+    exc(500, reason, log)
+  end
   def exception({code, msg}) when is_integer(code) do
-    exception(code, msg)
+    exc(code, msg)
   end
   def exception(code) when is_integer(code) do
-    exception(code, to_msg(code))
+    exc(code, to_msg(code))
   end
   def exception(reason) do
-    exception(500, "#{inspect reason}")
+    exc(500, "#{inspect reason}")
   end
 
   ###
   ### Priv
   ###
-  def exception(code, msg) when code >= 400 and code < 500 do
-    %OCCI.Error{ message: msg, code: code, log: nil }
+  def exc(code, msg, log \\ nil)
+  def exc(code, msg, log) when code < 500 do
+    %OCCI.Error{ message: msg, code: code, log: log }
   end
-  def exception(code, msg) do
-    log = "OCCI Error (#{code}): #{msg}"
+  def exc(code, msg, log) do
+    log = if log do
+      log
+    else
+      "OCCI Error (#{code}): #{msg}"
+    end
     %OCCI.Error{ message: to_msg(code), code: code, log: log }
   end
 

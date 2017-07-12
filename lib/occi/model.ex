@@ -18,6 +18,12 @@ defmodule OCCI.Model do
 
       def_user_mixins(unquote(user_mixins_mod), Map.new)
 
+      def new(data) when is_map(data) do
+        kind = Map.get_lazy(data, :kind, fn -> raise OCCI.Error, {422, "Missing attribute: kind"} end)
+        mixins = Map.get(data, :mixins, [])
+        mod(kind).new(data, mixins)
+      end
+
       def new(kind, attributes, mixins \\ []) do
 	      mod(kind).new(attributes, mixins)
       end

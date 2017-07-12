@@ -3,6 +3,10 @@ defmodule OCCI.Model.Core do
     core: false
 
   kind "http://schemas.ogf.org/occi/core#entity", alias: Entity do
+    attribute :kind,
+      get: &OCCI.Model.Core.Entity.kind/1,
+      set: &OCCI.Model.Core.Entity.kind/2
+
     attribute :id,
       alias: "occi.core.id",
       required: true,
@@ -12,9 +16,21 @@ defmodule OCCI.Model.Core do
     attribute "occi.core.title",
       alias: :title,
       type: OCCI.Types.String
-      
+
+    attribute :attributes,
+      get: &OCCI.Model.Core.Entity.attributes/1,
+      set: &OCCI.Model.Core.Entity.attributes/2
+
     def id(entity), do: entity.id
     def id(entity, value), do: Map.put(entity, :id, OCCI.Types.URI.cast(value))
+
+    def kind(entity), do: entity.kind
+    def kind(entity, _kind), do: entity
+
+    def attributes(entity), do: Map.get(entity, :attributes, %{})
+    def attributes(entity, attrs) do
+      attrs |> Enum.reduce(entity, fn {k, v}, acc -> set(acc, k, v) end)
+    end
 
     def add_mixin(entity, mixin) do
       Map.put(entity, :mixins, [ :"#{mixin}" | Map.get(entity, :mixins, []) ])
@@ -28,15 +44,27 @@ defmodule OCCI.Model.Core do
   kind "http://schemas.ogf.org/occi/core#resource",
     parent: "http://schemas.ogf.org/occi/core#entity",
     alias: Resource do
-    
+
     attribute "occi.core.summary",
       alias: :summary,
       type: OCCI.Types.String
 
+    attribute :links,
+      get: &OCCI.Model.Core.Resource.links/1,
+      set: &OCCI.Model.Core.Resource.links/2
+
+    def links(resource) do
+      Map.get(resource, :links, [])
+    end
+
+    def links(resource, links) when is_list(links) do
+      Map.put(resource, :links, Enum.map(links, &OCCI.Types.URI.cast/1))
+    end
+
     defdelegate add_mixin(entity, mixin), to: Entity
     defdelegate rm_mixin(entity, mixin), to: Entity
   end
-  
+
   kind "http://schemas.ogf.org/occi/core#link",
     parent: "http://schemas.ogf.org/occi/core#entity",
     alias: Link do

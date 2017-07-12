@@ -11,13 +11,18 @@ defmodule OCCI.Mixfile do
   end
 
   def application do
-    [applications: []]
+    [
+      env: [
+        model: OCCI.Model.Core
+      ],
+      applications: []
+    ]
   end
 
   defp deps do
     [
-      {:poison, "~> 3.1"}
+      {:poison, "~> 3.1"},
+      {:uuid, "~> 1.1"}
     ]
   end
 end
-
