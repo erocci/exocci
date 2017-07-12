@@ -23,7 +23,7 @@ defmodule OCCI.Types do
 	end
       _ -> raise OCCI.Error, {422, "Unknown OCCI type: #{type}"}
     end
-  end    
+  end
   def check(type) when is_atom(type) do
     check({type, []})
   end
@@ -31,7 +31,7 @@ end
 
 defmodule OCCI.Types.String do
   use OCCI.Types
-  
+
   def cast(v, _opts \\ nil) do
     try do
       "#{v}"
@@ -96,6 +96,16 @@ defmodule OCCI.Types.Enum do
       val
     else
       raise OCCI.Error, {422, "Invalid value: #{v} not in #{inspect values}"}
+    end
+  end
+end
+
+defmodule OCCI.Types.CIDR do
+  use OCCI.Types
+  def cast(v, _) do
+    case :inet.parse_address('#{v}') do
+      {:ok, cidr} -> cidr
+      _ -> raise OCCI.Error, {422, "Invalid CIDR: #{inspect v}"}
     end
   end
 end
