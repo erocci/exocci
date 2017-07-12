@@ -11,7 +11,7 @@ defmodule OCCI.Backend do
 
   @type t :: %OCCI.Backend{}
 
-  @callback init(model :: atom, args :: any) ::
+  @callback init(args :: any) ::
   {:ok, state} |
   {:stop, reason :: any} when state: any
 
