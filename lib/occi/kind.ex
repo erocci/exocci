@@ -24,9 +24,7 @@ defmodule OCCI.Kind do
           kind: @category,
           mixins: Enum.map(mixins, &(:"#{&1}")),
           attributes: %{},
-	        __internal__: %{
-	          model: @model
-	        }
+	        __node__: %OCCI.Node{ model: @model }
         }
 	      entity = Enum.reduce(attributes, entity, fn
           {:kind, _}, acc -> acc
@@ -82,7 +80,7 @@ defmodule OCCI.Kind do
       ### Priv
       ###
       defp mod(entity, name) do
-	      model = get_in(entity, [:__internal__, :model]) || @model
+	      model = OCCI.Model.Core.Entity.model(entity) || @model
 	      model.mod(name)
       end
 

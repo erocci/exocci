@@ -13,19 +13,19 @@ defmodule OCCI.Types do
   def check(type) when is_list(type) do
     {OCCI.Types.Enum, type}
   end
-  def check({type, opts}) do
-    case Code.ensure_loaded(type) do
+  def check({mod, opts}) do
+    case Code.ensure_loaded(mod) do
       {:module, _} ->
-	if function_exported?(type, :cast, 1) || function_exported?(type, :cast, 2) do
-	  {type, opts}
-	else
-	  raise OCCI.Error, {422, "#{type} do not implements OCCI.Types behaviour"}
-	end
-      _ -> raise OCCI.Error, {422, "Unknown OCCI type: #{type}"}
+	      if function_exported?(mod, :cast, 1) || function_exported?(mod, :cast, 2) do
+	        {mod, opts}
+	      else
+	        raise OCCI.Error, {422, "#{mod} do not implements OCCI.Types behaviour"}
+	      end
+      _ -> raise OCCI.Error, {422, "Unknown OCCI type: #{mod}"}
     end
   end
-  def check(type) when is_atom(type) do
-    check({type, []})
+  def check(mod) when is_atom(mod) do
+    check({mod, []})
   end
 end
 
@@ -36,7 +36,7 @@ defmodule OCCI.Types.String do
     try do
       "#{v}"
     rescue Protocol.UndefinedError ->
-	"#{inspect v}"
+	      "#{inspect v}"
     end
   end
 end

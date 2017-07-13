@@ -58,14 +58,14 @@ defmodule OCCI.Category do
       Module.put_attribute(__MODULE__, :attributes,
 	      [ unquote(spec) | Module.get_attribute(__MODULE__, :attributes) ])
     end
-    Module.eval_quoted(__CALLER__.module, ast)
+    Module.eval_quoted(__CALLER__, ast)
 
     if Keyword.get(opts, :required, false) do
       ast = quote do
 	      Module.put_attribute(__MODULE__, :required,
 	        [ unquote(name) | Module.get_attribute(__MODULE__, :required) ])
       end
-      Module.eval_quoted __CALLER__.module, ast
+      Module.eval_quoted __CALLER__, ast
     end
   end
 

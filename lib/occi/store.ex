@@ -1,6 +1,6 @@
 defmodule OCCI.Store do
+  alias OCCI.Model.Core.Entity
   require Logger
-  require OCCI.Node
 
   @doc """
   Start Store with given backends
@@ -15,7 +15,7 @@ defmodule OCCI.Store do
   @doc """
   Get an node by location
   """
-  @spec get(OCCI.Node.location) :: OCCI.Node.t | nil
+  @spec get(Entity.location) :: Core.Entity.t | nil
   def get(location) do
     Logger.debug("Store.get(#{location})")
     call(:fetch, [location])
@@ -24,7 +24,7 @@ defmodule OCCI.Store do
   @doc """
   Lookup entities
   """
-  @spec lookup([OCCI.Filter.t]) :: [OCCI.Node.t]
+  @spec lookup([OCCI.Filter.t]) :: [Entity.t]
   def lookup(filter) do
     Logger.debug("Store.lookup(#{inspect filter})")
     call(:lookup, [filter])
@@ -33,7 +33,7 @@ defmodule OCCI.Store do
   @doc """
   Save entity
   """
-  @spec create(OCCI.Entity.t, OCCI.Node.owner) :: OCCI.Node.t
+  @spec create(Entity.t, Entity.owner) :: Core.Entity.t
   def create(entity, location \\ nil, owner \\ nil) do
     Logger.debug("Store.create(#{inspect entity})")
     location = if location do
@@ -44,18 +44,18 @@ defmodule OCCI.Store do
     else
       UUID.uuid4()
     end
-    call(:store, [OCCI.Node.node(location: location, owner: owner, data: entity, serial: 0)])
+    call(:store, [Entity.attributes(entity, %{ location: location, owner: owner, serial: 0 })])
   end
 
   @doc """
   Update given entity
   """
-  @spec update(OCCI.Node.t) :: OCCI.Node.t
-  def update(node) do
-    Logger.debug("Store.update(#{inspect node})")
-    case call(:fetch, OCCI.Node.node(node, :location)) do
+  @spec update(Entity.t) :: Entity.t
+  def update(entity) do
+    Logger.debug("Store.update(#{inspect entity})")
+    case call(:fetch, Entity.location(entity)) do
       nil -> raise OCCI.Error, 404
-      orig -> call(:store, [OCCI.Node.node(orig, data: OCCI.Node.node(node, :data))])
+      orig -> call(:store, [Entity.node(entity, Entity.node(orig))])
     end
   end
 
@@ -75,10 +75,10 @@ defmodule OCCI.Store do
   ### Private
   ###
   defp call(name, args) do
-    Agent.get_and_update(__MODULE__, fn %{ backend: {mod, state0}}=s ->
+    Agent.get_and_update(__MODULE__, fn {mod, state0} ->
       case apply(mod, name, args ++ [state0]) do
         {:reply, ret, state} ->
-          {ret, %{ s | backend: {mod, state}}}
+          {ret, {mod, state}}
         {:stop, reason, state} ->
           try do
             mod.terminate(:shutdown, state)

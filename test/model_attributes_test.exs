@@ -21,7 +21,8 @@ defmodule ModelAttributesTest do
 
     assert match?("A title",
       OCCI.Model.Core.Entity.get(%{ kind: :"http://schemas.ogf.org/occi/core#resource",
-				                            attributes: %{ "occi.core.title": "A title" } }, :title))
+				                            attributes: %{ "occi.core.title": "A title" },
+                                    __node__: %{ model: OCCI.Model.Core }}, :title))
   end
 
   test "Required attributes" do

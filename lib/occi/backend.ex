@@ -16,15 +16,15 @@ defmodule OCCI.Backend do
   {:stop, reason :: any} when state: any
 
   @callback fetch(OCCI.Node.location, state) ::
-  {:reply, OCCI.Node.t | nil, new_state} |
+  {:reply, OCCI.Model.Core.Entity.t | nil, new_state} |
   {:stop, reason :: term, new_state} when state: term, new_state: term
 
   @callback lookup(OCCI.Filter.t, state) ::
-  {:reply, [OCCI.Node.t], new_state} |
+  {:reply, [OCCI.Model.Core.Entity.t], new_state} |
   {:stop, reason :: term, new_state} when state: term, new_state: term
 
-  @callback store(OCCI.Node.t, state) ::
-  {:reply, OCCI.Node.t, new_state} |
+  @callback store(OCCI.Model.Core.Entity.t, state) ::
+  {:reply, OCCI.Model.Core.Entity.t, new_state} |
   {:stop, reason :: term, new_state} when state: term, new_state: term
 
   @callback delete(OCCI.Node.location, state) ::

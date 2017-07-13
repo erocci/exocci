@@ -93,7 +93,8 @@ defmodule ComplexModelTest do
       :"http://schemas.ogf.org/occi/core#entity"
     ], ComplexModel.mod("http://example.org/occi/complex#mykind0").categories(
       %{ kind: :"http://example.org/occi/complex#mykind0",
-    	   mixins: []}))
+    	   mixins: [],
+         __node__: %{ model: ComplexModel }}))
 
     assert match?([
       :"http://example.org/occi/complex#mymixin1",
@@ -109,6 +110,7 @@ defmodule ComplexModelTest do
     	   mixins: [
 	         :"http://example.org/occi/complex#mymixin1",
 	         :"http://example.org/occi/complex#mymixin12"
-	       ]}))
+	       ],
+         __node__: %{ model: ComplexModel }}))
   end
 end

@@ -1,12 +1,10 @@
 defmodule OCCI.Node do
-  require Record
-
+  @moduledoc """
+  Defines struct, getter and setter for entity's internal metadata
+  """
   @type location :: String.t
-  @type user :: String.t
-  @type group :: String.t
-  @type owner :: {user, group} | nil
-  @type serial :: String.t | nil
-  @type data :: OCCI.Entity.t | OCCI.Collection.t
 
-  Record.defrecord :node, [location: nil, owner: {nil, nil}, serial: nil, data: nil]
+  defstruct [:location, :owner, :serial, :model]
+
+  @type t :: %OCCI.Node{location: location, owner: {String.t, String.t} | nil, serial: String.t | nil, model: atom}
 end
