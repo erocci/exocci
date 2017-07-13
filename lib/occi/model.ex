@@ -21,11 +21,17 @@ defmodule OCCI.Model do
       def new(data) when is_map(data) do
         kind = Map.get_lazy(data, :kind, fn -> raise OCCI.Error, {422, "Missing attribute: kind"} end)
         mixins = Map.get(data, :mixins, [])
-        mod(kind).new(data, mixins)
+        case mod(kind) do
+          nil -> raise OCCI.Error, {422, "Invalid category: #{kind}"}
+          mod -> mod(kind).new(data, mixins)
+        end
       end
 
       def new(kind, attributes, mixins \\ []) do
-	      mod(kind).new(attributes, mixins)
+        case mod(kind) do
+          nil -> raise OCCI.Error, {422, "Invalid category: #{kind}"}
+	        mod -> mod(kind).new(attributes, mixins)
+        end
       end
 
       def kind?(name) do
