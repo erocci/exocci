@@ -4,8 +4,11 @@ defmodule OCCI.Model.Core do
 
   kind "http://schemas.ogf.org/occi/core#entity", alias: Entity do
     attribute :kind,
-      get: &OCCI.Model.Core.Entity.kind/1,
-      set: &OCCI.Model.Core.Entity.kind/2
+      get: &OCCI.Model.Core.Entity.kind/1
+
+    attribute :mixins,
+      get: &OCCI.Model.Core.Entity.mixins/1,
+      set: &OCCI.Model.Core.Entity.mixins/2
 
     attribute :id,
       alias: "occi.core.id",
@@ -25,7 +28,9 @@ defmodule OCCI.Model.Core do
     def id(entity, value), do: Map.put(entity, :id, OCCI.Types.URI.cast(value))
 
     def kind(entity), do: entity.kind
-    def kind(entity, _kind), do: entity
+
+    def mixins(entity), do: Map.get(entity, :mixins, [])
+    def mixins(entity, mixins), do: Map.put(entity, :mixins, mixins)
 
     def attributes(entity), do: Map.get(entity, :attributes, %{})
     def attributes(entity, attrs) do

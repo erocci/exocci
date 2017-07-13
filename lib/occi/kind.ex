@@ -28,8 +28,10 @@ defmodule OCCI.Kind do
 	          model: @model
 	        }
         }
-	      entity = Enum.reduce(attributes, entity, fn {key, value}, acc ->
-	        set(acc, key, value)
+	      entity = Enum.reduce(attributes, entity, fn
+          {:kind, _}, acc -> acc
+          {:mixins, _}, acc -> acc
+          {key, value}, acc -> set(acc, key, value)
 	      end)
 	      complete(entity)
       end

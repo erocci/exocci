@@ -119,7 +119,11 @@ defmodule OCCI.Category.Helpers do
   end
 
   def setter(name, nil, nil) do
-    raise OCCI.Error, {422, "Invalid attribute specification: #{name}. You must specifiy either type or custom setter"}
+    quote do
+      def __set__(entity, unquote(name), _) do
+        raise OCCI.Error, {422, "Attribute #{unquote(name)} is unmutable"}
+      end
+    end
   end
   def setter(name, nil, {typemod, opts}) do
     quote do
