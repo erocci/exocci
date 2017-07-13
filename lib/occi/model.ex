@@ -1,4 +1,25 @@
 defmodule OCCI.Model do
+  @moduledoc """
+  Use this module to define categories for your application.
+
+  Defines the following functions for creating entities:
+  * `new/1`: creates entity from map, similar to JSON rendering
+  * `new/3`: creates entity from kind, mixins and attributes
+
+  Defines the following functions for manipulating categories:
+  * `kind?/1`: check a kind is part of this model
+  * `kinds/0`: returns list of supported kinds, including imported ones
+  * `mixin?/1`: check a mixin is part of this model
+  * `mixins/0`: returns list of availables mixins
+  * `mixin/1`: add a user mixin
+  * `del_mixin/1`: delete a user mixin
+
+  Available macros:
+  * `extends/1`: import categories from another model
+  * `kind/3`: defines a new kind
+  * `mixin/2`: defines a new mixin
+  """
+
   @doc false
   defmacro __using__(opts) do
     import_core = Keyword.get(opts, :core, true)
@@ -79,12 +100,21 @@ defmodule OCCI.Model do
     end
   end
 
+  @doc """
+  Import categories from a model.
+  A model is represented by an elixir module.
+
+  OCCI.Model.Core is imported by default in all models.
+  """
   defmacro extends(name) do
     mod = Macro.expand(name, __CALLER__)
     imports = Module.get_attribute(__CALLER__.module, :imports)
     Module.put_attribute(__CALLER__.module, :imports, MapSet.put(imports, mod))
   end
 
+  @doc """
+  Defines a new kind
+  """
   defmacro kind(name, args \\ [], do_block \\ nil) do
     modname = OCCI.Category.Helpers.mod_name(name, args, __CALLER__)
     name = name |> OCCI.Category.Helpers.to_atom
@@ -113,6 +143,9 @@ defmodule OCCI.Model do
     end
   end
 
+  @doc """
+  Defines a new mixin
+  """
   defmacro mixin(name, args \\ []) do
     model = __CALLER__.module
     name = name |> OCCI.Category.Helpers.to_atom
