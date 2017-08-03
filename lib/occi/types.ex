@@ -2,9 +2,14 @@ defmodule OCCI.Types do
   defmacro __using__(_opts) do
     quote do
       @behaviour OCCI.Types
+
+      def check_opts(_opts), do: true
+
+      defoverridable [check_opts: 1]
     end
   end
 
+  @callback check_opts(opts :: any) :: boolean | {true, canonical_opts :: any}
   @callback cast(data :: any, opts :: term) :: any
 
   @doc """
@@ -17,7 +22,11 @@ defmodule OCCI.Types do
     case Code.ensure_loaded(mod) do
       {:module, _} ->
 	      if function_exported?(mod, :cast, 1) || function_exported?(mod, :cast, 2) do
-	        {mod, opts}
+          case mod.check_opts(opts) do
+            false -> raise OCCI.Error, {422, "Invalid options for #{mod}: #{inspect opts}"}
+            true -> {mod, opts}
+            {true, opts} -> {mod, opts}
+          end
 	      else
 	        raise OCCI.Error, {422, "#{mod} do not implements OCCI.Types behaviour"}
 	      end
@@ -32,11 +41,31 @@ end
 defmodule OCCI.Types.String do
   use OCCI.Types
 
-  def cast(v, _opts \\ nil) do
+  def check_opts(opts) do
     try do
-      "#{v}"
-    rescue Protocol.UndefinedError ->
-	      "#{inspect v}"
+      case Keyword.get(opts, :match, nil) do
+        nil -> true
+        r when is_binary(r) -> {true, [match: quote do Regex.compile!(unquote(r)) end]}
+        _ -> false
+      end
+    rescue FunctionClauseError -> false
+    end
+  end
+
+  def cast(v, opts \\ []) do
+    case Keyword.get(opts, :match, nil) do
+      nil ->
+        try do
+          "#{v}"
+        rescue Protocol.UndefinedError ->
+	          "#{inspect v}"
+        end
+      r ->
+        if Regex.match?(r, v) do
+          v
+        else
+          raise OCCI.Error, {422, "#{inspect v} does not match #{inspect r}"}
+        end
     end
   end
 end
@@ -49,6 +78,10 @@ end
 
 defmodule OCCI.Types.Kind do
   use OCCI.Types
+
+  def check_opts(model) when is_atom(model), do: true
+  def check_opts(_), do: false
+
   def cast(v, model) do
     kind = :"#{v}"
     if model.kind?(kind) do
@@ -61,6 +94,9 @@ end
 
 defmodule OCCI.Types.Integer do
   use OCCI.Types
+
+  def check_opts(_), do: true
+
   def cast(v, opts \\ nil)
   def cast(v, opts) when is_integer(v) do
     range(v, Keyword.get(opts, :min), Keyword.get(opts, :max))
@@ -82,6 +118,7 @@ end
 
 defmodule OCCI.Types.Float do
   use OCCI.Types
+
   def cast(v, opts \\ nil)
   def cast(v, _) when is_float(v) do
     v
@@ -98,6 +135,10 @@ end
 
 defmodule OCCI.Types.Enum do
   use OCCI.Types
+
+  def check_opts(values) when is_list(values), do: true
+  def check_opts(_), do: false
+
   def cast(v, values) do
     val = :"#{v}"
     if val in values do

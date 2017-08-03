@@ -3,7 +3,7 @@ defmodule OCCI.Mixfile do
 
   def project do
     [
-      app: :exocci,
+      app: :occi,
       version: "0.1.0",
       elixir: "~> 1.3",
       build_embedded: Mix.env == :prod,
@@ -41,7 +41,7 @@ defmodule OCCI.Mixfile do
 
   defp package do
     [
-      name: :exocci,
+      name: :occi,
       maintainers: ["Jean Parpaillon"],
       licenses: ["Apache 2.0"],
       links: %{
