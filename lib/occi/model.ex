@@ -19,6 +19,7 @@ defmodule OCCI.Model do
   * `kind/3`: defines a new kind
   * `mixin/2`: defines a new mixin
   """
+  alias OCCI.Category.Helpers
 
   @doc false
   defmacro __using__(opts) do
@@ -97,7 +98,23 @@ defmodule OCCI.Model do
 	        end)
 	      end)
       end
+
+      @before_compile OCCI.Model
     end
+  end
+
+  @doc false
+  defmacro __before_compile__(env) do
+    {line, doc} = case Module.get_attribute(env.module, :moduledoc) do
+                    nil -> {2, ""}
+                    {line, doc} -> {line, doc}
+                  end
+
+    doc = doc |>
+      gen_exts_doc(Module.get_attribute(env.module, :imports)) |>
+      gen_kinds_doc(Module.get_attribute(env.module, :kinds)) |>
+      gen_mixins_doc(Module.get_attribute(env.module, :mixins))
+    Module.put_attribute(env.module, :moduledoc, {line, doc})
   end
 
   @doc """
@@ -116,8 +133,8 @@ defmodule OCCI.Model do
   Defines a new kind
   """
   defmacro kind(name, args \\ [], do_block \\ nil) do
-    modname = OCCI.Category.Helpers.mod_name(name, args, __CALLER__)
-    name = name |> OCCI.Category.Helpers.to_atom
+    modname = Helpers.__mod_name__(name, args, __CALLER__)
+    name = name |> Helpers.__to_atom__
     model = __CALLER__.module
     parent = case Keyword.get(args, :parent) do
 	             {:__aliases__, _, _}=aliases ->
@@ -148,8 +165,8 @@ defmodule OCCI.Model do
   """
   defmacro mixin(name, args \\ []) do
     model = __CALLER__.module
-    name = name |> OCCI.Category.Helpers.to_atom
-    modname = OCCI.Category.Helpers.mod_name(name, args, __CALLER__)
+    name = name |> Helpers.__to_atom__
+    modname = Helpers.__mod_name__(name, args, __CALLER__)
     args = [
       {:name, name}, {:model, model},
       {:depends, Keyword.get(args, :depends, [])},
@@ -180,5 +197,53 @@ defmodule OCCI.Model do
     _ = Code.compiler_options(ignore_module_conflict: true)
     _ = Code.compile_quoted(quoted)
     :ok
+  end
+
+  def gen_exts_doc(doc, exts) do
+    if Enum.empty?(exts) do
+      doc
+    else
+      doc = doc <> """
+
+      Imported extensions:
+      """
+      Enum.reduce(exts, doc, fn ext, acc ->
+        acc <> """
+        * `#{ext}`
+        """
+      end)
+    end
+  end
+
+  def gen_kinds_doc(doc, kinds) do
+    if Enum.empty?(kinds) do
+      doc
+    else
+      doc = doc <> """
+
+      Defined Kinds:
+      """
+      Enum.reduce(kinds, doc, fn {kind, _}, acc ->
+        acc <> """
+        * _#{kind}_
+        """
+      end)
+    end
+  end
+
+  def gen_mixins_doc(doc, mixins) do
+    if Enum.empty?(mixins) do
+      doc
+    else
+      doc = doc <> """
+
+      Defined Mixins:
+      """
+      Enum.reduce(mixins, doc, fn {mixin, _}, acc ->
+        acc <> """
+        * _#{mixin}_
+        """
+      end)
+    end
   end
 end

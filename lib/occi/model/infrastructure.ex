@@ -1,4 +1,7 @@
 defmodule OCCI.Model.Infrastructure do
+  @moduledoc """
+  Infrastructure OCCI model
+  """
   use OCCI.Model
 
   alias OCCI.Model.Core
@@ -6,7 +9,6 @@ defmodule OCCI.Model.Infrastructure do
 
   kind "http://schemas.ogf.org/occi/infrastructure#compute",
     parent: Core.Resource,
-    alias: Compute,
     attributes: [
       "occi.compute.architecture": [
         type: [:x86, :x64],
@@ -66,7 +68,6 @@ defmodule OCCI.Model.Infrastructure do
 
   kind "http://schemas.ogf.org/occi/infrastructure#storage",
     parent: Core.Resource,
-    alias: Storage,
     attributes: [
       "occi.storage.size": [
         type: Types.Float,
@@ -87,7 +88,6 @@ defmodule OCCI.Model.Infrastructure do
 
   kind "http://schemas.ogf.org/occi/infrastructure#storagelink",
     parent: Core.Link,
-    alias: StorageLink,
     attributes: [
       "occi.storagelink.deviceid": [
         type: Types.String,
@@ -112,7 +112,6 @@ defmodule OCCI.Model.Infrastructure do
 
   kind "http://schemas.ogf.org/occi/infrastructure#network",
     parent: Core.Resource,
-    alias: Network,
     attributes: [
       "occi.network.vlan": [
         type: Types.Integer,
@@ -142,7 +141,6 @@ defmodule OCCI.Model.Infrastructure do
 
   kind "http://schemas.ogf.org/occi/infrastructure#networkinterface",
     parent: Core.Link,
-    alias: NetworkInterface,
     attributes: [
       "occi.networkinterface.interface": [
         type: Types.String,
@@ -169,7 +167,6 @@ defmodule OCCI.Model.Infrastructure do
 
   mixin "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork",
     applies: [ "http://schemas.ogf.org/occi/infrastructure#network" ],
-    alias: Infrastructure.IPNetwork,
     attributes: [
       "occi.network.address": [
         type: Types.CIDR,
@@ -190,7 +187,6 @@ defmodule OCCI.Model.Infrastructure do
 
   mixin "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface",
     applies: [ "http://schemas.ogf.org/occi/infrastructure#networkinterface" ],
-    alias: Infrastructure.IPNetworkInterface,
     attributes: [
       "occi.networkinterface.address": [
         type: Types.CIDR,
@@ -209,14 +205,11 @@ defmodule OCCI.Model.Infrastructure do
       ]
     ]
 
-  mixin "http://schemas.ogf.org/occi/infrastructure#os_tpl",
-    alias: Infrastructure.OSTemplate
+  mixin "http://schemas.ogf.org/occi/infrastructure#os_tpl"
 
-  mixin "http://schemas.ogf.org/occi/infrastructure#resource_tpl",
-    alias: Infrastructure.ResourceTemplate
+  mixin "http://schemas.ogf.org/occi/infrastructure#resource_tpl"
 
   mixin "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key",
-    alias: Infrastructure.SSHKey,
     applies: [ "http://schemas.ogf.org/occi/infrastructure#compute" ],
     attributes: [
       "occi.credentials.ssh.publickey": [
@@ -227,7 +220,6 @@ defmodule OCCI.Model.Infrastructure do
     ]
 
   mixin "http://schemas.ogf.org/occi/infrastructure/compute#user_data",
-    alias: Infrastructure.UserData,
     applies: [ "http://schemas.ogf.org/occi/infrastructure#compute" ],
     attributes: [
       "occi.compute.userdata": [

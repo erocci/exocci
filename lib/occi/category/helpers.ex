@@ -1,6 +1,14 @@
 defmodule OCCI.Category.Helpers do
+  @moduledoc """
+  Collection of functions for compiling OCCI category modules.
+  """
 
-  def def_attributes(env) do
+  @doc false
+  def __gen_doc__(_env) do
+  end
+
+  @doc false
+  def __def_attributes__(env) do
     specs = Enum.reduce(Module.get_attribute(env.module, :attributes), [], fn spec, acc ->
       case Keyword.get(spec, :type) do
 	      nil -> [ spec | acc ]
@@ -43,7 +51,8 @@ defmodule OCCI.Category.Helpers do
     end
   end
 
-  def def_actions(env) do
+  @doc false
+  def __def_actions__(env) do
     for {name, [entity_arg, attrs_arg], opts, do_block} <- Module.get_attribute(env.module, :actions) do
       category = case Keyword.get(opts, :category) do
 		               nil ->
@@ -54,7 +63,7 @@ defmodule OCCI.Category.Helpers do
 		                 :"#{cat}"
 		             end
 
-      modname = OCCI.Category.Helpers.mod_name(category, opts, env)
+      modname = __mod_name__(category, opts, env)
       opts = [
         {:name, category},
         {:model, Module.get_attribute(env.module, :model)},
@@ -81,30 +90,56 @@ defmodule OCCI.Category.Helpers do
     end
   end
 
-  def mod_name(name, args, env) do
+  @doc false
+  def __mod_name__(name, args, env) do
     case Keyword.get(args, :alias) do
       nil ->
-	      mod_encode("#{name}") |> to_atom
+	      mod_encode("#{name}", env)
       {:__aliases__, _, _}=aliases ->
 	      Module.concat([env.module, Macro.expand(aliases, env)])
     end
   end
 
-  def mod_encode(name) do
-    URI.encode(name, &URI.char_unreserved?/1)
+  @doc false
+  def __to_atom__(nil), do: nil
+  def __to_atom__(s), do: :"#{s}"
+
+  @doc false
+  def __parse_category__(name) do
+    case String.split("#{name}", "#") do
+      [scheme, term] -> {:"#{scheme}", :"#{term}"}
+      _ -> raise OCCI.Error, {422, "Invalid category: #{name}"}
+    end
   end
 
-  def to_atom(nil), do: nil
-  def to_atom(s), do: :"#{s}"
+  ###
+  ### Priv
+  ###
+  defp mod_encode(name, env) do
+    case String.split(name, "#") do
+      [_scheme, term] ->
+        mod = Module.concat([env.module, Macro.camelize(term)])
+        try do
+          _ = mod.module_info(:attributes)
+          raise OCCI.Error, {422, "Category with term '#{term}' already exists in this model, please alias it."}
+        rescue UndefinedFunctionError ->
+            mod
+        end
+      _ -> raise OCCI.Error, {422, "Invalid category : #{name}"}
+    end
+  end
+  #def mod_encode(name) do
+  #  URI.encode(name, &URI.char_unreserved?/1)
+  #end
 
-    def getter(name, nil, default) do
+  defp getter(name, nil, default) do
     quote do
       def __get__(entity, unquote(name)) do
 	      Map.get(entity.attributes, unquote(name), unquote(default))
       end
     end
   end
-  def getter(name, custom, _) do
+  defp getter(name, custom, _) do
     quote do
       def __get__(entity, unquote(name)) do
 	      unquote(custom).(entity)
@@ -112,20 +147,20 @@ defmodule OCCI.Category.Helpers do
     end
   end
 
-  def getter_alias(name, alias_) do
+  defp getter_alias(name, alias_) do
     quote do
       def __get__(entity, unquote(alias_)), do: __get__(entity, unquote(name))
     end
   end
 
-  def setter(name, nil, nil) do
+  defp setter(name, nil, nil) do
     quote do
       def __set__(entity, unquote(name), _) do
         raise OCCI.Error, {422, "Attribute #{unquote(name)} is unmutable"}
       end
     end
   end
-  def setter(name, nil, {typemod, opts}) do
+  defp setter(name, nil, {typemod, opts}) do
     quote do
       def __set__(entity, unquote(name), value) do
 	      casted = try do
@@ -139,7 +174,7 @@ defmodule OCCI.Category.Helpers do
       end
     end
   end
-  def setter(name, custom, _) do
+  defp setter(name, custom, _) do
     quote do
       def __set__(entity, unquote(name), value) do
 	      unquote(custom).(entity, value)
@@ -147,16 +182,9 @@ defmodule OCCI.Category.Helpers do
     end
   end
 
-  def setter_alias(name, alias_) do
+  defp setter_alias(name, alias_) do
     quote do
       def __set__(entity, unquote(alias_), value), do: __set__(entity, unquote(name), value)
-    end
-  end
-
-  def parse_category(name) do
-    case String.split("#{name}", "#") do
-      [scheme, term] -> {:"#{scheme}", :"#{term}"}
-      _ -> raise OCCI.Error, {422, "Invalid category: #{name}"}
     end
   end
 end

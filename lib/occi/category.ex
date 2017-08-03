@@ -14,7 +14,7 @@ defmodule OCCI.Category do
       end
     end)
     attr_specs = Keyword.get(opts, :attributes, [])
-    {scheme, term} = OCCI.Category.Helpers.parse_category(name)
+    {scheme, term} = OCCI.Category.Helpers.__parse_category__(name)
 
     Module.put_attribute(__CALLER__.module, :attributes, [])
     Module.put_attribute(__CALLER__.module, :required, [])

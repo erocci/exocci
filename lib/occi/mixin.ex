@@ -1,4 +1,6 @@
 defmodule OCCI.Mixin do
+  alias OCCI.Category.Helpers
+
   defmacro __using__(opts) do
     depends = Keyword.get(opts, :depends, []) |> Enum.map(&(:"#{&1}"))
     applies = Keyword.get(opts, :applies, []) |> Enum.map(&(:"#{&1}"))
@@ -42,7 +44,8 @@ defmodule OCCI.Mixin do
   end
 
   defmacro __before_compile__(_opts) do
-    OCCI.Category.Helpers.def_attributes(__CALLER__)
-    OCCI.Category.Helpers.def_actions(__CALLER__)
+    Helpers.__gen_doc__(__CALLER__)
+    Helpers.__def_attributes__(__CALLER__)
+    Helpers.__def_actions__(__CALLER__)
   end
 end

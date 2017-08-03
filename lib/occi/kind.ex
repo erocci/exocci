@@ -142,7 +142,8 @@ defmodule OCCI.Kind do
   end
 
   defmacro __before_compile__(_opts) do
-    OCCI.Category.Helpers.def_attributes(__CALLER__)
-    OCCI.Category.Helpers.def_actions(__CALLER__)
+    OCCI.Category.Helpers.__gen_doc__(__CALLER__)
+    OCCI.Category.Helpers.__def_attributes__(__CALLER__)
+    OCCI.Category.Helpers.__def_actions__(__CALLER__)
   end
 end
