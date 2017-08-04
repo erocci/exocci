@@ -63,7 +63,7 @@ defmodule OCCI.Category.Helpers do
 		                 :"#{cat}"
 		             end
 
-      modname = __mod_name__(category, opts, env)
+      modname = __action_mod_name__(name, opts, env)
       opts = [
         {:name, category},
         {:model, Module.get_attribute(env.module, :model)},
@@ -88,6 +88,11 @@ defmodule OCCI.Category.Helpers do
       end
       Module.eval_quoted(env.module, ast)
     end
+  end
+
+  @doc false
+  def __action_mod_name__(name, args, env) do
+    Module.concat([env.module, Actions, Macro.camelize("#{name}")])
   end
 
   @doc false

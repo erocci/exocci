@@ -70,11 +70,25 @@ defmodule OCCI.Category do
   end
 
   defmacro action({name, _, [_, _]=args}, opts, do_block) do
-    spec = {:"#{name}", args, opts, do_block}
-    Module.put_attribute(__CALLER__.module, :actions,
-      [ spec | Module.get_attribute(__CALLER__.module, :actions) ])
+    add_action_spec(__CALLER__.module, {name, args, opts, do_block})
   end
-  defmacro action({_, _, args}, _, _) do
+  defmacro action({_, _, args}, _, _do_block) do
     raise "Action signature expects 2 arguments, found #{length(args)}"
+  end
+
+  defmacro action({name, _, nil}, opts) do
+    add_action_spec(__CALLER__.module, {name, nil, opts, nil})
+  end
+
+  ###
+  ### priv
+  ###
+  defp add_action_spec(mod, {name, _, _, _}=spec) do
+    actions = Module.get_attribute(mod, :actions)
+    if List.keymember?(actions, name, 0) do
+      raise OCCI.Error, {422, "Action '#{name}' already defined"}
+    else
+      Module.put_attribute(mod, :actions, [ spec | actions ])
+    end
   end
 end

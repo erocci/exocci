@@ -41,13 +41,18 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ] do
-    # action start,
-    #   title: "Start the instance"
-    # action stop,
-    #   title: "Stop the instance",
-    #   attributes: [
-    #     method: [type: [:graceful, :acpioff, :poweroff]]
-    #   ]
+
+    action start,
+      title: "Start the instance"
+
+    action stop(entity, _args),
+      title: "Stop the instance",
+      attributes: [
+        method: [type: [:graceful, :acpioff, :poweroff]]
+      ] do
+      Core.Entity.set(entity, "occi.compute.state", :inactive)
+    end
+
     # action restart,
     #   title: "Restart the instance",
     #   attributes: [
