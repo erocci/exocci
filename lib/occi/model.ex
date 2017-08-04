@@ -199,7 +199,10 @@ defmodule OCCI.Model do
     :ok
   end
 
-  def gen_exts_doc(doc, exts) do
+  ###
+  ### Priv
+  ###
+  defp gen_exts_doc(doc, exts) do
     if Enum.empty?(exts) do
       doc
     else
@@ -215,7 +218,7 @@ defmodule OCCI.Model do
     end
   end
 
-  def gen_kinds_doc(doc, kinds) do
+  defp gen_kinds_doc(doc, kinds) do
     if Enum.empty?(kinds) do
       doc
     else
@@ -231,7 +234,7 @@ defmodule OCCI.Model do
     end
   end
 
-  def gen_mixins_doc(doc, mixins) do
+  defp gen_mixins_doc(doc, mixins) do
     if Enum.empty?(mixins) do
       doc
     else

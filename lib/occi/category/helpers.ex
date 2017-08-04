@@ -118,19 +118,19 @@ defmodule OCCI.Category.Helpers do
   defp mod_encode(name, env) do
     case String.split(name, "#") do
       [_scheme, term] ->
-        mod = Module.concat([env.module, Macro.camelize(term)])
-        try do
-          _ = mod.module_info(:attributes)
-          raise OCCI.Error, {422, "Category with term '#{term}' already exists in this model, please alias it."}
-        rescue UndefinedFunctionError ->
-            mod
+        categories = Map.merge(Module.get_attribute(env.module, :kinds), Module.get_attribute(env.module, :mixins))
+        newmod = Module.concat([env.module, Macro.camelize(term)])
+        exist = Enum.any?(categories, fn {_, mod} ->
+          Module.concat([mod]) == newmod
+        end)
+        if exist do
+          raise OCCI.Error, {422, "Category with term '#{Macro.camelize(term)}' already exists in this model, please alias it."}
+        else
+          newmod
         end
       _ -> raise OCCI.Error, {422, "Invalid category : #{name}"}
     end
   end
-  #def mod_encode(name) do
-  #  URI.encode(name, &URI.char_unreserved?/1)
-  #end
 
   defp getter(name, nil, default) do
     quote do
