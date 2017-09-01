@@ -18,13 +18,16 @@ defmodule OCCI.Kind do
       @doc """
       Creates a new entity of the kind
       """
-      def new(attributes, mixins \\ []) do
+      def new(attributes, mixins \\ [], model \\ nil) do
         entity = %{
           id: nil,
           kind: @category,
           mixins: Enum.map(mixins, &(:"#{&1}")),
           attributes: %{},
-	        __node__: %OCCI.Node{ model: @model }
+	        __node__: %OCCI.Node{
+            defined_in: @model,
+            created_in: model || @model
+          }
         }
 	      entity = Enum.reduce(attributes, entity, fn
           {:kind, _}, acc -> acc
@@ -80,7 +83,7 @@ defmodule OCCI.Kind do
       ### Priv
       ###
       defp mod(entity, name) do
-	      model = OCCI.Model.Core.Entity.model(entity) || @model
+	      model = OCCI.Model.Core.Entity.__defined_in__(entity) || @model
 	      model.mod(name)
       end
 
@@ -114,9 +117,9 @@ defmodule OCCI.Kind do
 	      try do
 	        mod(entity, cat).__get__(entity, key)
 	      rescue
-	        e in FunctionClauseError ->
+	        FunctionClauseError ->
 	          __get__(entity, key, categories)
-	        e in UndefinedFunctionError ->
+	        UndefinedFunctionError ->
 	          __get__(entity, key, categories)
 	      end
       end
@@ -127,9 +130,9 @@ defmodule OCCI.Kind do
 	        mod = mod(entity, cat)
 	        mod.__set__(entity, key, value)
 	      rescue
-	        e in FunctionClauseError ->
+	        FunctionClauseError ->
 	          __set__(entity, key, value, categories)
-	        e in UndefinedFunctionError ->
+	        UndefinedFunctionError ->
 	          __set__(entity, key, value, categories)
 	      end
       end

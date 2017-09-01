@@ -27,7 +27,15 @@ defmodule OCCI.Category.Helpers do
 	      require unquote(mod)
       end
     end
-    Module.eval_quoted env.module, ast
+    Module.eval_quoted(env.module, ast)
+
+    defaults = Enum.reduce(specs, %{}, fn spec, acc ->
+      case Keyword.get(spec, :default) do
+        nil -> acc
+        v -> Map.put(acc, Keyword.get(spec, :name), v)
+      end
+    end)
+    Module.put_attribute(env.module, :defaults, defaults)
 
     clauses = Enum.reduce(specs, [], fn spec, acc ->
       name = Keyword.get(spec, :name)
@@ -52,47 +60,73 @@ defmodule OCCI.Category.Helpers do
   end
 
   @doc false
-  def __def_actions__(env) do
-    for {name, [entity_arg, attrs_arg], opts, do_block} <- Module.get_attribute(env.module, :actions) do
-      category = case Keyword.get(opts, :category) do
-		               nil ->
-		                 scheme = Module.get_attribute(env.module, :scheme)
-		                 term = Module.get_attribute(env.module, :term)
-		                 :"#{scheme}/#{term}/action##{name}"
-		               cat ->
-		                 :"#{cat}"
-		             end
+  def __add_action_spec__(env, {name, _, _, _}=spec) do
 
-      modname = __action_mod_name__(name, opts, env)
-      opts = [
-        {:name, category},
-        {:model, Module.get_attribute(env.module, :model)},
-        {:related, Module.get_attribute(env.module, :category)}
-        | opts
-      ]
-      do_name = :'do_#{name}'
-
-      ast = quote do
-        defmodule unquote(modname) do
-          use OCCI.Action, unquote(opts)
-        end
-
-        def unquote(name)(unquote(entity_arg)=entity, unquote(attrs_arg)=attrs) do
-          action = unquote(modname).new(attrs)
-          unquote(do_name)(unquote(entity_arg), action)
-        end
-
-        def unquote(do_name)(unquote(entity_arg), unquote(attrs_arg)) do
-          unquote(do_block[:do])
-        end
-      end
-      Module.eval_quoted(env.module, ast)
+    # Add to related category
+    actions = Module.get_attribute(env.module, :actions)
+    #IO.puts("ACTIONS: #{inspect name} in #{inspect actions} ?")
+    if List.keymember?(actions, name, 0) do
+      raise OCCI.Error, {422, "Action '#{name}' already defined"}
+    else
+      Module.put_attribute(env.module, :actions, [ spec | actions ])
     end
   end
 
   @doc false
-  def __action_mod_name__(name, args, env) do
-    Module.concat([env.module, Actions, Macro.camelize("#{name}")])
+  def __def_actions__(env) do
+    model = Module.get_attribute(env.module, :model)
+    specs = Module.get_attribute(env.module, :actions)
+
+    for {name, args, opts, do_block} <- specs do
+      category = action_id(name, opts, env)
+      modname = Module.concat([env.module, Actions, Macro.camelize("#{name}")])
+      opts = [
+        {:name, category},
+        {:model, Module.get_attribute(env.module, :model)},
+        {:related, Module.get_attribute(env.module, :category)},
+        {:related_mod, env.module}
+        | opts
+      ]
+
+      if do_block do
+        case args do
+          [_, _] -> :ok
+          nil -> :ok
+          _ ->
+            # In case do_block is defined, signature must include 2 arguments
+            # and only two: entity + attributes
+            raise OCCI.Error, {422, "Action defines its body, signature must be of arity 2"}
+        end
+      end
+
+      # Create action module
+      ast = quote do
+        defmodule unquote(modname) do
+          use OCCI.Action, unquote(opts)
+        end
+      end
+      Module.eval_quoted(env.module, ast)
+
+      # Create action function in category
+      ast = quote do
+        def unquote(name)(entity, attrs) do
+          action = unquote(modname).new(attrs)
+          unquote(model).__exec__(action, entity)
+        end
+      end
+      Module.eval_quoted(env.module, ast)
+
+      # Create action implementation function if any
+      if do_block do
+        do_action = :"__#{category}__"
+        ast = quote do
+          def unquote(do_action)(unquote_splicing(args)) do
+            unquote(do_block[:do])
+          end
+        end
+        Module.eval_quoted(env.module, ast)
+      end
+    end
   end
 
   @doc false
@@ -120,6 +154,17 @@ defmodule OCCI.Category.Helpers do
   ###
   ### Priv
   ###
+  defp action_id(name, opts, env) do
+    case Keyword.get(opts, :category) do
+		  nil ->
+		    scheme = Module.get_attribute(env.module, :scheme)
+		    term = Module.get_attribute(env.module, :term)
+		    :"#{scheme}/#{term}/action##{name}"
+		  cat ->
+		    :"#{cat}"
+		end
+  end
+
   defp mod_encode(name, env) do
     case String.split(name, "#") do
       [_scheme, term] ->

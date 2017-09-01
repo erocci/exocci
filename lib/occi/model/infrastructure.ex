@@ -45,12 +45,12 @@ defmodule OCCI.Model.Infrastructure do
     action start,
       title: "Start the instance"
 
-    action stop(entity, _args),
+    action stop(vm, _attrs),
       title: "Stop the instance",
       attributes: [
         method: [type: [:graceful, :acpioff, :poweroff]]
       ] do
-      Core.Entity.set(entity, "occi.compute.state", :inactive)
+      Core.Entity.set(vm, "occi.compute.state", :inactive)
     end
 
     # action restart,

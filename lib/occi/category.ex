@@ -1,4 +1,5 @@
 defmodule OCCI.Category do
+  alias OCCI.Category.Helpers
 
   defmacro __using__(opts) do
     name = Keyword.get_lazy(opts, :name,
@@ -14,7 +15,7 @@ defmodule OCCI.Category do
       end
     end)
     attr_specs = Keyword.get(opts, :attributes, [])
-    {scheme, term} = OCCI.Category.Helpers.__parse_category__(name)
+    {scheme, term} = Helpers.__parse_category__(name)
 
     Module.put_attribute(__CALLER__.module, :attributes, [])
     Module.put_attribute(__CALLER__.module, :required, [])
@@ -47,7 +48,13 @@ defmodule OCCI.Category do
       def term, do: @term
       def title, do: @title
       def required, do: @required
+
+      @before_compile OCCI.Category
     end
+  end
+
+  defmacro __before_compile__(_opts) do
+    :ok
   end
 
   defmacro attribute(name, opts) do
@@ -65,30 +72,32 @@ defmodule OCCI.Category do
 	      Module.put_attribute(__MODULE__, :required,
 	        [ unquote(name) | Module.get_attribute(__MODULE__, :required) ])
       end
-      Module.eval_quoted __CALLER__, ast
+      Module.eval_quoted(__CALLER__, ast)
     end
   end
 
   defmacro action({name, _, [_, _]=args}, opts, do_block) do
-    add_action_spec(__CALLER__.module, {name, args, opts, do_block})
+    # action with arguments, options and do_block
+    Helpers.__add_action_spec__(__CALLER__, {name, args, opts, do_block})
   end
   defmacro action({_, _, args}, _, _do_block) do
     raise "Action signature expects 2 arguments, found #{length(args)}"
   end
 
-  defmacro action({name, _, nil}, opts) do
-    add_action_spec(__CALLER__.module, {name, nil, opts, nil})
+  defmacro action({id, _, args}, [do: _]=do_block) do
+    # action without options but with arguments and body: overriding implementation,
+    # can not redefine options
+    {category, name} = case id do
+                         {:., _, [cat]} ->
+                           {_scheme, term} = Helpers.__parse_category__(cat)
+                           {cat, term}
+                         id when is_atom(id) -> id
+                       end
+    opts = [category: category]
+    Helpers.__add_action_spec__(__CALLER__, {name, args, opts, do_block})
   end
-
-  ###
-  ### priv
-  ###
-  defp add_action_spec(mod, {name, _, _, _}=spec) do
-    actions = Module.get_attribute(mod, :actions)
-    if List.keymember?(actions, name, 0) do
-      raise OCCI.Error, {422, "Action '#{name}' already defined"}
-    else
-      Module.put_attribute(mod, :actions, [ spec | actions ])
-    end
+  defmacro action({name, _, nil}, opts) when is_list(opts) do
+    # action without arguments but options
+    Helpers.__add_action_spec__(__CALLER__, {name, nil, opts, nil})
   end
 end

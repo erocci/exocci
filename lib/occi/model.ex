@@ -19,23 +19,27 @@ defmodule OCCI.Model do
   * `kind/3`: defines a new kind
   * `mixin/2`: defines a new mixin
   """
+  alias OCCI.OrdSet
   alias OCCI.Category.Helpers
 
   @doc false
   defmacro __using__(opts) do
     import_core = Keyword.get(opts, :core, true)
     user_mixins_mod = Module.concat(__CALLER__.module, UserMixins)
-    Module.put_attribute(__CALLER__.module, :imports, MapSet.new)
+    Module.put_attribute(__CALLER__.module, :imports, OrdSet.new)
     Module.put_attribute(__CALLER__.module, :kinds, Map.new)
     Module.put_attribute(__CALLER__.module, :mixins, Map.new)
+    Module.put_attribute(__CALLER__.module, :actions, [])
 
     quote do
       require OCCI.Model
       import OCCI.Model
 
+      import OCCI.Category, only: [action: 2]
+
       if unquote(import_core) do
 	      imports = Module.get_attribute(__MODULE__, :imports)
-	      Module.put_attribute(__MODULE__, :imports, MapSet.put(imports, OCCI.Model.Core))
+	      Module.put_attribute(__MODULE__, :imports, OrdSet.add(imports, OCCI.Model.Core))
       end
 
       def_user_mixins(unquote(user_mixins_mod), Map.new)
@@ -45,14 +49,14 @@ defmodule OCCI.Model do
         mixins = Map.get(data, :mixins, [])
         case mod(kind) do
           nil -> raise OCCI.Error, {422, "Invalid category: #{kind}"}
-          mod -> mod(kind).new(data, mixins)
+          mod -> mod(kind).new(data, mixins, __MODULE__)
         end
       end
 
       def new(kind, attributes, mixins \\ []) do
         case mod(kind) do
           nil -> raise OCCI.Error, {422, "Invalid category: #{kind}"}
-	        mod -> mod(kind).new(attributes, mixins)
+	        mod -> mod(kind).new(attributes, mixins, __MODULE__)
         end
       end
 
@@ -99,12 +103,52 @@ defmodule OCCI.Model do
 	      end)
       end
 
+      @doc false
+      def __imports__ do
+        Enum.reduce(@imports, OCCI.OrdSet.new(),
+          &(OCCI.OrdSet.merge(&2, [ &1 | &1.__imports__() ])))
+      end
+
+      @doc false
+      #
+      # When launching an action on an entity, look for implementation in
+      # creation model, creation model's imports, then related category.
+      #
+      def __exec__(action, entity) do
+        fun = :"__#{OCCI.Action.id(action)}__"
+        attrs = OCCI.Action.attributes(action)
+        related = OCCI.Action.related(action)
+        related_mod = OCCI.Action.__related_mod__(action)
+        model = OCCI.Model.Core.Entity.__created_in__(entity)
+        __exec__(entity, attrs, related, related_mod, fun, [ model | model.__imports__() ])
+      end
+
+      defp __exec__(entity, attrs, _related, related_mod, fun, []) do
+        try do
+          apply(related_mod, fun, [entity, attrs])
+        rescue UndefinedFunctionError ->
+            # No implementation found, returns entity
+            entity
+        end
+      end
+      defp __exec__(entity, attrs, related, related_mod, fun, [ model | models ]) do
+        try do
+          apply(model, fun, [entity, attrs])
+        rescue e in UndefinedFunctionError ->
+            __exec__(entity, attrs, related, related_mod, fun, models)
+        end
+      end
+
       @before_compile OCCI.Model
     end
   end
 
   @doc false
   defmacro __before_compile__(env) do
+    # Generate action implementations
+    Helpers.__def_actions__(env)
+
+    # Generate documentation
     {line, doc} = case Module.get_attribute(env.module, :moduledoc) do
                     nil -> {2, ""}
                     {line, doc} -> {line, doc}
@@ -126,7 +170,7 @@ defmodule OCCI.Model do
   defmacro extends(name) do
     mod = Macro.expand(name, __CALLER__)
     imports = Module.get_attribute(__CALLER__.module, :imports)
-    Module.put_attribute(__CALLER__.module, :imports, MapSet.put(imports, mod))
+    Module.put_attribute(__CALLER__.module, :imports, OrdSet.add(imports, mod))
   end
 
   @doc """

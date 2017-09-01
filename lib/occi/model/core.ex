@@ -44,7 +44,7 @@ defmodule OCCI.Model.Core do
       set: &Entity.serial/2
 
     attribute :model,
-      get: &Entity.model/1
+      get: &Entity.__defined_in__/1
 
     attribute :node,
       get: &Entity.node/1,
@@ -78,7 +78,11 @@ defmodule OCCI.Model.Core do
       Map.put(entity, :__node__, %{ entity.__node__ | serial: serial })
     end
 
-    def model(entity), do: entity.__node__.model
+    @doc false
+    def __defined_in__(entity), do: entity.__node__.defined_in
+
+    @doc false
+    def __created_in__(entity), do: entity.__node__.created_in
 
     def node(entity), do: entity.__node__
     def node(entity, node), do: %{ entity | __node__: node }
@@ -152,7 +156,7 @@ defmodule OCCI.Model.Core do
     def target_kind(link), do: get_in(link, [:target, :kind])
     def target_kind(link, kind) do
       target = Map.get(link, :target, %{})
-      model = Entity.model(link) || @model
+      model = Entity.__created_in__(link) || @model
       casted = Types.Kind.cast(kind, model)
       Map.put(link, :target, Map.put(target, :kind, casted))
     end

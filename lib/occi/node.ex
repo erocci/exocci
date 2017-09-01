@@ -1,10 +1,15 @@
 defmodule OCCI.Node do
   @moduledoc """
-  Defines struct, getter and setter for entity's internal metadata
+  Structure for entities metadata
   """
   @type location :: String.t
 
-  defstruct [:location, :owner, :serial, :model]
+  defstruct [:location, :owner, :serial, :defined_in, :created_in]
 
-  @type t :: %OCCI.Node{location: location, owner: {String.t, String.t} | nil, serial: String.t | nil, model: atom}
+  @type t :: %OCCI.Node{
+    location: location,
+    owner: {String.t, String.t} | nil,
+    serial: String.t | nil,
+    defined_in: atom,
+    created_in: atom}
 end

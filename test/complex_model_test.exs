@@ -94,7 +94,7 @@ defmodule ComplexModelTest do
     ], ComplexModel.mod("http://example.org/occi/complex#mykind0").categories(
       %{ kind: :"http://example.org/occi/complex#mykind0",
     	   mixins: [],
-         __node__: %{ model: ComplexModel }}))
+         __node__: %{ defined_in: ComplexModel, created_in: ComplexModel }}))
 
     assert match?([
       :"http://example.org/occi/complex#mymixin1",
@@ -111,6 +111,6 @@ defmodule ComplexModelTest do
 	         :"http://example.org/occi/complex#mymixin1",
 	         :"http://example.org/occi/complex#mymixin12"
 	       ],
-         __node__: %{ model: ComplexModel }}))
+         __node__: %{ defined_in: ComplexModel, created_in: ComplexModel }}))
   end
 end

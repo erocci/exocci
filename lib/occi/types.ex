@@ -132,6 +132,14 @@ defmodule OCCI.Types.Float do
   end
 end
 
+defmodule OCCI.Types.Boolean do
+  use OCCI.Types
+
+  def cast(v, _) when is_boolean(v), do: true
+  def cast(v, _) do
+    raise OCCI.Error, {422, "Invalid boolean: #{inspect v}"}
+  end
+end
 
 defmodule OCCI.Types.Enum do
   use OCCI.Types
