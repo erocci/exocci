@@ -92,6 +92,22 @@ defmodule OCCI.Types.Kind do
   end
 end
 
+defmodule OCCI.Types.Mixin do
+  use OCCI.Types
+
+  def check_opts(model) when is_atom(model), do: true
+  def check_opts(_), do: false
+
+  def cast(v, model) do
+    mixin = :"#{v}"
+    if model.mixin?(mixin) do
+      mixin
+    else
+      raise OCCI.Error, {422, "Invalid mixin: #{v}"}
+    end
+  end
+end
+
 defmodule OCCI.Types.Integer do
   use OCCI.Types
 
@@ -153,6 +169,19 @@ defmodule OCCI.Types.Enum do
       val
     else
       raise OCCI.Error, {422, "Invalid value: #{v} not in #{inspect values}"}
+    end
+  end
+end
+
+defmodule OCCI.Types.Array do
+  use OCCI.Types
+
+  def cast(arr, opts) when is_list(arr) do
+    case Keyword.get(:type, opts, nil) do
+      nil -> arr
+      type ->
+        {mod, opts} = OCCI.Types.check(type)
+        Enum.map(arr, &(mod.cast(&1, opts)))
     end
   end
 end

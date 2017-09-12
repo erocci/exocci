@@ -1,5 +1,6 @@
 defmodule OCCI.Category do
   alias OCCI.Category.Helpers
+  alias OCCI.Attribute
 
   defmacro __using__(opts) do
     name = Keyword.get_lazy(opts, :name,
@@ -23,6 +24,7 @@ defmodule OCCI.Category do
     quote do
       require OCCI.Category
       import OCCI.Category
+      alias OCCI.Attribute
 
       @model unquote(model)
 
@@ -32,14 +34,13 @@ defmodule OCCI.Category do
       @title unquote(title)
 
       for {name, spec} <- unquote(attr_specs) do
-	      name = :"#{name}"
-	      spec = [ {:name, name} | spec ]
+	      spec = Attribute.spec(name, spec)
 	      Module.put_attribute(__MODULE__, :attributes,
 	        [ spec | Module.get_attribute(__MODULE__, :attributes) ])
 
 	      if Keyword.get(spec, :required, false) do
 	        Module.put_attribute(__MODULE__, :required,
-	          [ name | Module.get_attribute(__MODULE__, :required) ])
+	          [ :"#{name}" | Module.get_attribute(__MODULE__, :required) ])
 	      end
       end
 
@@ -48,6 +49,8 @@ defmodule OCCI.Category do
       def term, do: @term
       def title, do: @title
       def required, do: @required
+
+      def __specs__, do: @attributes
 
       @before_compile OCCI.Category
     end
@@ -58,12 +61,9 @@ defmodule OCCI.Category do
   end
 
   defmacro attribute(name, opts) do
-    name = :"#{name}"
-    spec = [ {:name, name} | opts ]
-
     ast = quote do
       Module.put_attribute(__MODULE__, :attributes,
-	      [ unquote(spec) | Module.get_attribute(__MODULE__, :attributes) ])
+	      [ Attribute.spec(unquote(name), unquote(opts)) | Module.get_attribute(__MODULE__, :attributes) ])
     end
     Module.eval_quoted(__CALLER__, ast)
 

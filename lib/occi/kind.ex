@@ -55,13 +55,13 @@ defmodule OCCI.Kind do
       Return all categories attribute definition must be searched for.
 
       [
-      mixin0
-	    mixin0 deps
-	    mixin1
-	    mixin1 deps
-	    ...
-	    kind
-	    kind parents
+        mixin0
+	      mixin0 deps
+	      mixin1
+	      mixin1 deps
+	      ...
+	      kind
+	      kind parents
       ]
       """
       def categories(entity) do

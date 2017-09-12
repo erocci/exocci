@@ -9,12 +9,7 @@ defmodule OCCI.Category.Helpers do
 
   @doc false
   def __def_attributes__(env) do
-    specs = Enum.reduce(Module.get_attribute(env.module, :attributes), [], fn spec, acc ->
-      case Keyword.get(spec, :type) do
-	      nil -> [ spec | acc ]
-	      type -> [ Keyword.put(spec, :check, OCCI.Types.check(type)) | acc ]
-      end
-    end)
+    specs = Module.get_attribute(env.module, :attributes, [])
 
     requires = Enum.reduce(specs, MapSet.new, fn spec, acc ->
       case Keyword.get(spec, :check) do
@@ -64,7 +59,6 @@ defmodule OCCI.Category.Helpers do
 
     # Add to related category
     actions = Module.get_attribute(env.module, :actions)
-    #IO.puts("ACTIONS: #{inspect name} in #{inspect actions} ?")
     if List.keymember?(actions, name, 0) do
       raise OCCI.Error, {422, "Action '#{name}' already defined"}
     else

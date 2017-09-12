@@ -60,16 +60,28 @@ defmodule OCCI.Model do
         end
       end
 
+      @doc """
+      Return true if `name` is a valid kind id
+      """
+      @spec kind?(charlist() | String.t | atom) :: boolean
       def kind?(name) do
 	      name = :"#{name}"
 	      Map.has_key?(@kinds, name) or Enum.any?(@imports, &(&1.kind?(name)))
       end
 
+      @doc """
+      Return available kinds in this model and imported ones as a map id -> module
+      """
+      @spec kinds() :: map
       def kinds do
 	      Enum.reduce(@imports, @kinds,
 	        &(Map.merge(&1.kinds(), &2)))
       end
 
+      @doc """
+      Return true if `name` if a valid mixin id
+      """
+      @spec mixin?(charlist() | String.t | atom) :: boolean
       def mixin?(name) do
 	      name = :"#{name}"
 	      Map.has_key?(@mixins, name)
@@ -77,21 +89,39 @@ defmodule OCCI.Model do
 	      or Enum.any?(@imports, &(&1.mixin?(name)))
       end
 
+      @doc """
+      Return defined mixins in this model and imported ones
+      """
+      @spec mixins() :: map
       def mixins do
 	      Enum.reduce(@imports, Map.merge(@mixins, unquote(user_mixins_mod).mixins()),
 	        &(Map.merge(&1.mixins(), &2)))
       end
 
-      def mixin(name) do
+      @doc """
+      Add user mixin (tag)
+      """
+      @spec add_mixin(charlist() | String.t | atom) :: :ok
+      def add_mixin(name) do
 	      mixins = Map.put(unquote(user_mixins_mod).mixins(), :"#{name}", nil)
         OCCI.Model.def_user_mixins(unquote(user_mixins_mod), mixins)
       end
 
+      @doc """
+      Delete user mixin (tag)
+      """
+      @spec del_mixin(charlist() | String.t | atom) :: :ok
       def del_mixin(name) do
         mixins = unquote(user_mixins_mod).mixins() |> Map.delete(:"#{name}")
         OCCI.Model.def_user_mixins(unquote(user_mixins_mod), mixins)
       end
 
+      @doc """
+      Return module name for a given category id
+
+      TODO: might it be hidden for user ?
+      """
+      @spec mod(charlist() | String.t | atom) :: atom
       def mod(name) do
 	      name = :"#{name}"
 	      Map.get_lazy(@kinds, name, fn ->
@@ -101,6 +131,24 @@ defmodule OCCI.Model do
 	          end)
 	        end)
 	      end)
+      end
+
+      @doc """
+      Given a list of categories, returns all attributes specs
+      """
+      def specs(categories) do
+        Enum.reduce(categories, OrdSet.new(), fn category, acc ->
+          OrdSet.merge(acc, mod(category).__specs__())
+        end)
+      end
+
+      @doc """
+      Returns list of mixins applicable to a given kind
+      """
+      def applicable_mixins(kind) do
+        Enum.reduce(mixins(), [], fn {id, _}, acc ->
+          if mod(id).apply?(kind), do: [ id | acc ], else: acc
+        end)
       end
 
       @doc false
