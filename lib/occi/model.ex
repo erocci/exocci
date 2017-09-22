@@ -117,6 +117,12 @@ defmodule OCCI.Model do
       end
 
       @doc """
+      Return title of given category
+      """
+      @spec title(String.t | charlist() | atom) :: String.t
+      def title(category), do: mod(category).title
+
+      @doc """
       Return module name for a given category id
 
       TODO: might it be hidden for user ?
