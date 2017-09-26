@@ -13,6 +13,8 @@ defmodule OCCI.Rendering.JSON do
 
   @doc false
   def render(entity) do
-    entity |> Poison.encode!([pretty: true])
+    entity |>
+      Map.drop([:__node__]) |>
+      Poison.encode!([pretty: true])
   end
 end
