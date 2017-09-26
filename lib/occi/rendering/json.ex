@@ -2,6 +2,7 @@ defmodule OCCI.Rendering.JSON do
   @moduledoc """
   JSON parser / renderer
   """
+  alias OCCI.Model.Core
 
   @doc false
   def parse(model, data) when is_binary(data) do
@@ -14,7 +15,7 @@ defmodule OCCI.Rendering.JSON do
   @doc false
   def render(entity) do
     entity |>
-      Map.drop([:__node__]) |>
+      Core.Entity.print |>
       Poison.encode!([pretty: true])
   end
 end

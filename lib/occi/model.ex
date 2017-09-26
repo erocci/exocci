@@ -150,6 +150,15 @@ defmodule OCCI.Model do
       end
 
       @doc """
+      Given a list of categories, returns list of required attributes
+      """
+      def required(categories) do
+        Enum.reduce(categories, OrdSet.new(), fn category, acc ->
+          OrdSet.merge(acc, mod(category).required())
+        end)
+      end
+
+      @doc """
       Given a list of categories, returns all action specifications
       """
       def actions(categories) do

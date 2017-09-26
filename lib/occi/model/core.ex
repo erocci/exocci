@@ -97,6 +97,19 @@ defmodule OCCI.Model.Core do
     def rm_mixin(entity, mixin) do
       Map.put(entity, :mixins, List.delete(Map.get(entity, :mixins, []), :"#{mixin}"))
     end
+
+    @doc """
+    Return printable version: remove __node__ attribute, add default value
+    of required attributes when not defined
+    """
+    def print(entity) do
+      model = entity.__node__.created_in
+      defaults = model.required([ entity.kind | entity.mixins ]) |>
+        Enum.reduce(%{}, fn key, acc -> Map.put(acc, key, get(entity, key)) end)
+      entity |>
+        Map.put(:attributes, Map.merge(defaults, entity.attributes)) |>
+        Map.drop([:__node__])
+    end
   end
 
   kind "http://schemas.ogf.org/occi/core#resource",
