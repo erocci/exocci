@@ -4,6 +4,7 @@ defmodule OCCI.Kind do
     opts = [ {:type, :kind} | opts ]
 
     Module.put_attribute(__CALLER__.module, :actions, [])
+    Module.put_attribute(__CALLER__.module, :action_mods, [])
 
     quote do
       use OCCI.Category, unquote(opts)

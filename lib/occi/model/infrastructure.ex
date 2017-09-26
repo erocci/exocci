@@ -139,10 +139,11 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ] do
-    # action up,
-    #   title: "Bring the instance up"
-    # action down,
-    #   title: "Bring the instance down"
+    action up,
+      title: "Bring the instance up"
+
+    action down,
+       title: "Bring the instance down"
   end
 
   kind "http://schemas.ogf.org/occi/infrastructure#networkinterface",

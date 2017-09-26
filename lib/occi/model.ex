@@ -30,6 +30,7 @@ defmodule OCCI.Model do
     Module.put_attribute(__CALLER__.module, :kinds, Map.new)
     Module.put_attribute(__CALLER__.module, :mixins, Map.new)
     Module.put_attribute(__CALLER__.module, :actions, [])
+    Module.put_attribute(__CALLER__.module, :action_mods, [])
 
     quote do
       require OCCI.Model
@@ -145,6 +146,15 @@ defmodule OCCI.Model do
       def specs(categories) do
         Enum.reduce(categories, OrdSet.new(), fn category, acc ->
           OrdSet.merge(acc, mod(category).__specs__())
+        end)
+      end
+
+      @doc """
+      Given a list of categories, returns all action specifications
+      """
+      def actions(categories) do
+        Enum.reduce(categories, OrdSet.new(), fn category, acc ->
+          OrdSet.merge(acc, mod(category).__actions__())
         end)
       end
 

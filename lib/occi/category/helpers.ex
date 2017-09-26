@@ -64,12 +64,13 @@ defmodule OCCI.Category.Helpers do
 
   @doc false
   def __add_action_spec__(env, {name, _, _, _}=spec) do
-
     # Add to related category
     actions = Module.get_attribute(env.module, :actions)
     if List.keymember?(actions, name, 0) do
       raise OCCI.Error, {422, "Action '#{name}' already defined"}
     else
+      modname = Module.concat([env.module, Actions, Macro.camelize("#{name}")])
+      Module.put_attribute(env.module, :action_mods, [ {name, modname} | Module.get_attribute(env.module, :action_mods) ])
       Module.put_attribute(env.module, :actions, [ spec | actions ])
     end
   end
@@ -81,7 +82,8 @@ defmodule OCCI.Category.Helpers do
 
     for {name, args, opts, do_block} <- specs do
       category = action_id(name, opts, env)
-      modname = Module.concat([env.module, Actions, Macro.camelize("#{name}")])
+      modname = Keyword.get(Module.get_attribute(env.module, :action_mods), name)
+      # modname = Module.concat([env.module, Actions, Macro.camelize("#{name}")])
       opts = [
         {:name, category},
         {:model, Module.get_attribute(env.module, :model)},
@@ -129,6 +131,11 @@ defmodule OCCI.Category.Helpers do
         Module.eval_quoted(env.module, ast)
       end
     end
+
+    ast = quote do
+      def __actions__, do: @action_mods
+    end
+    Module.eval_quoted(env.module, ast)
   end
 
   @doc false
