@@ -41,7 +41,6 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ] do
-
     action start,
       title: "Start the instance"
 
@@ -53,22 +52,24 @@ defmodule OCCI.Model.Infrastructure do
       Core.Entity.set(vm, "occi.compute.state", :inactive)
     end
 
-    # action restart,
-    #   title: "Restart the instance",
-    #   attributes: [
-    #     method: [type: [:graceful, :warm, :cold]]
-    #   ]
-    # action suspend,
-    #   title: "Suspend the instance",
-    #   attributes: [
-    #     method: [type: [:hibernate, :suspend]]
-    #   ]
-    # action save,
-    #   title: "Creates a snapshot of the instance",
-    #   attributes: [
-    #     method: [type: [:host, :deferred]],
-    #     name: [type: Types.String]
-    #   ]
+    action restart,
+      title: "Restart the instance",
+      attributes: [
+        method: [type: [:graceful, :warm, :cold]]
+      ]
+
+    action suspend,
+      title: "Suspend the instance",
+      attributes: [
+        method: [type: [:hibernate, :suspend]]
+      ]
+
+    action save,
+      title: "Creates a snapshot of the instance",
+      attributes: [
+        method: [type: [:host, :deferred]],
+        name: [type: OCCI.Types.String]
+      ]
   end
 
   kind "http://schemas.ogf.org/occi/infrastructure#storage",

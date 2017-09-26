@@ -32,7 +32,15 @@ defmodule OCCI.Category.Helpers do
     end)
     Module.put_attribute(env.module, :defaults, defaults)
 
-    clauses = Enum.reduce(specs, [], fn spec, acc ->
+    last_clauses = [{
+      quote do
+        def __get__(entity, name), do: raise KeyError, key: name, term: entity
+      end,
+      quote do
+        def __set__(entity, name, _), do: raise KeyError, key: name, term: entity
+      end
+    }]
+    clauses = Enum.reduce(specs, last_clauses, fn spec, acc ->
       name = Keyword.get(spec, :name)
       getter = getter(name, Keyword.get(spec, :get), Keyword.get(spec, :default))
       setter = setter(name, Keyword.get(spec, :set), Keyword.get(spec, :check))

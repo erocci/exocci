@@ -72,6 +72,9 @@ defmodule OCCI.Model.Core do
     def owner(entity, {_, _}=owner) do
       Map.put(entity, :__node__, %{ entity.__node__ | owner: owner })
     end
+    def owner(entity, nil) do
+      Map.put(entity, :__node__, %{ entity.__node__ | owner: nil })
+    end
 
     def serial(entity), do: entity.__node__.serial
     def serial(entity, serial) do

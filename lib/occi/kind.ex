@@ -117,10 +117,7 @@ defmodule OCCI.Kind do
 	      try do
 	        mod(entity, cat).__get__(entity, key)
 	      rescue
-	        FunctionClauseError ->
-	          __get__(entity, key, categories)
-	        UndefinedFunctionError ->
-	          __get__(entity, key, categories)
+          KeyError -> __get__(entity, key, categories)
 	      end
       end
 
@@ -130,10 +127,7 @@ defmodule OCCI.Kind do
 	        mod = mod(entity, cat)
 	        mod.__set__(entity, key, value)
 	      rescue
-	        FunctionClauseError ->
-	          __set__(entity, key, value, categories)
-	        UndefinedFunctionError ->
-	          __set__(entity, key, value, categories)
+          KeyError -> __set__(entity, key, value, categories)
 	      end
       end
 
