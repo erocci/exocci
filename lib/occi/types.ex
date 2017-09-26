@@ -190,23 +190,23 @@ defmodule OCCI.Types.CIDR do
   use OCCI.Types
   def cast(v, _ \\ nil) do
     try do
-      case String.split("#{v}", "/") do
-        [addr] ->
-          case :inet.parse_address('#{addr}') do
-            {:ok, cidr} when tuple_size(cidr) == 4 -> {cidr, 32}
-            {:ok, cidr} when tuple_size(cidr) == 8 -> {cidr, 128}
-            {:ok, }
-            _ -> raise ""
-          end
-        [addr, netmask] ->
-          case :inet.parse_address('#{addr}') do
-            {:ok, cidr} when tuple_size(cidr) == 4 ->
-              {cidr, OCCI.Types.Integer.cast(netmask, min: 0, max: 32)}
-            {:ok, cidr} when tuple_size(cidr) == 8 ->
-              {cidr, OCCI.Types.Integer.cast(netmask, min: 0, max: 128)}
-            _ -> raise ""
-          end
-      end
+      {cidr, mask} = case String.split("#{v}", "/") do
+                       [addr] ->
+                         case :inet.parse_address('#{addr}') do
+                           {:ok, cidr} when tuple_size(cidr) == 4 -> {cidr, 32}
+                           {:ok, cidr} when tuple_size(cidr) == 8 -> {cidr, 128}
+                           _ -> raise ""
+                         end
+                       [addr, netmask] ->
+                         case :inet.parse_address('#{addr}') do
+                           {:ok, cidr} when tuple_size(cidr) == 4 ->
+                             {cidr, OCCI.Types.Integer.cast(netmask, min: 0, max: 32)}
+                           {:ok, cidr} when tuple_size(cidr) == 8 ->
+                             {cidr, OCCI.Types.Integer.cast(netmask, min: 0, max: 128)}
+                           _ -> raise ""
+                         end
+                     end
+        "#{:inet.ntoa(cidr)}/#{mask}"
     rescue _ ->
         raise OCCI.Error, {422, "Invalid CIDR: #{inspect v}"}
     end
