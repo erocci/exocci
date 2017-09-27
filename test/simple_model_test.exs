@@ -2,7 +2,8 @@ defmodule SimpleModelTest do
   use ExUnit.Case
 
   defmodule SimpleModel do
-    use OCCI.Model
+    use OCCI.Model,
+      scheme: "http://example.org/occi/simple"
 
     kind "http://example.org/occi/simple#mykind0",
       parent: OCCI.Model.Core.Resource

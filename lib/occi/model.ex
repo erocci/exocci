@@ -25,6 +25,17 @@ defmodule OCCI.Model do
   @doc false
   defmacro __using__(opts) do
     import_core = Keyword.get(opts, :core, true)
+    scheme = case Keyword.get(opts, :scheme) do
+               nil -> raise "Using OCCI.Model requires :scheme arg"
+               s ->
+                 case String.split("#{s}", "#") do
+                   [s] -> :"#{s}"
+                   [s, ""] -> :"#{s}"
+                   _ -> raise "Invalid syntax for :scheme"
+                 end
+             end
+    Module.put_attribute(__CALLER__.module, :scheme, scheme)
+
     user_mixins_mod = Module.concat(__CALLER__.module, UserMixins)
     Module.put_attribute(__CALLER__.module, :imports, OrdSet.new)
     Module.put_attribute(__CALLER__.module, :kinds, Map.new)
@@ -280,7 +291,7 @@ defmodule OCCI.Model do
   @doc """
   Defines a new mixin
   """
-  defmacro mixin(name, args \\ []) do
+  defmacro mixin(name, args \\ [], do_block \\ nil) do
     model = __CALLER__.module
     name = name |> Helpers.__to_atom__
     modname = Helpers.__mod_name__(name, args, __CALLER__)
@@ -290,7 +301,7 @@ defmodule OCCI.Model do
       {:applies, Keyword.get(args, :applies, [])}
       | args ]
 
-    do_block = Keyword.get(args, :do)
+    do_block = do_block || Keyword.get(args, :do)
 
     mixins = Module.get_attribute(model, :mixins)
     Module.put_attribute(model, :mixins, Map.put(mixins, name, modname))

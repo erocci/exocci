@@ -1,6 +1,7 @@
 defmodule OCCI.Model.Core do
   use OCCI.Model,
-    core: false
+    core: false,
+    scheme: "http://schemas.ogf.org/occi/core"
 
   kind "http://schemas.ogf.org/occi/core#entity", alias: Entity do
     alias OCCI.Types

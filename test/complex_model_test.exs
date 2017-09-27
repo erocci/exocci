@@ -2,7 +2,8 @@ defmodule ComplexModelTest do
   use ExUnit.Case
 
   defmodule ComplexModel do
-    use OCCI.Model
+    use OCCI.Model,
+      scheme: "http://example.org/occi/complex"
 
     kind "http://example.org/occi/complex#mykind0",
       parent: OCCI.Model.Core.Resource

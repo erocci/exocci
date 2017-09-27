@@ -22,6 +22,8 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 
 ## TODO
 
+* Use protocol for serialization
+
 ### Attributes
 
 ### Categories

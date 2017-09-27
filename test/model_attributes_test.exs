@@ -33,7 +33,8 @@ defmodule ModelAttributesTest do
   end
 
   defmodule ModelAttributesModel do
-    use OCCI.Model
+    use OCCI.Model,
+      scheme: "http://example.org/occi"
 
     kind "http://example.org/occi#kind0",
       parent: "http://schemas.ogf.org/occi/core#resource",

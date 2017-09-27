@@ -2,7 +2,8 @@ defmodule OCCI.Model.Infrastructure do
   @moduledoc """
   Infrastructure OCCI model
   """
-  use OCCI.Model
+  use OCCI.Model,
+    scheme: "http://schemas.ogf.org/occi/infrastructure"
 
   alias OCCI.Model.Core
   alias OCCI.Types
