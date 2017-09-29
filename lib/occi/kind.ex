@@ -8,6 +8,8 @@ defmodule OCCI.Kind do
 
     quote do
       use OCCI.Category, unquote(opts)
+      alias OCCI.OrdSet
+
       @before_compile OCCI.Kind
 
       @parent unquote(parent)
@@ -19,15 +21,14 @@ defmodule OCCI.Kind do
       @doc """
       Creates a new entity of the kind
       """
-      def new(attributes, mixins \\ [], model \\ nil) do
+      def new(attributes, mixins \\ [], model \\ OCCI.Model.Core) do
         entity = %{
           id: nil,
-          kind: @category,
-          mixins: Enum.map(mixins, &(:"#{&1}")),
+          kind: __MODULE__,
+          mixins: mixins,
           attributes: %{},
 	        __node__: %OCCI.Node{
-            defined_in: @model,
-            created_in: model || @model
+            model: model
           }
         }
 	      entity = Enum.reduce(attributes, entity, fn
@@ -35,7 +36,7 @@ defmodule OCCI.Kind do
           {:mixins, _}, acc -> acc
           {key, value}, acc -> set(acc, key, value)
 	      end)
-	      complete(entity)
+        complete(entity)
       end
 
       def get(entity, key) when is_atom(key) do
@@ -49,7 +50,7 @@ defmodule OCCI.Kind do
 	      __set__(entity, key, value, categories(entity))
       end
       def set(entity, key, value) do
-	      __set__(entity, "#{key}", value, categories(entity))
+	      __set__(entity, :"#{key}", value, categories(entity))
       end
 
       @doc """
@@ -66,57 +67,52 @@ defmodule OCCI.Kind do
       ]
       """
       def categories(entity) do
-	      depends = Enum.reduce(Map.get(entity, :mixins, []), OCCI.OrdSet.new(), fn mixin, acc ->
-	        case mod(entity, mixin) do
-	          nil -> OCCI.OrdSet.add(acc, mixin)
-	          mod -> OCCI.OrdSet.merge(acc, [ mixin | mod.depends!() ])
-	        end
+	      depends = Enum.reduce(Map.get(entity, :mixins, []), OrdSet.new(), fn mixin, acc ->
+          OrdSet.merge(acc, [ mixin | mixin.depends!() ])
 	      end)
 	      kind = Map.get(entity, :kind)
-	      parents = case mod(entity, kind) do
-		                nil -> []
-		                mod -> mod.parent!()
-		              end
+	      parents = kind.parent!()
 	      Enum.reverse(depends) ++ [ kind | parents ]
+      end
+
+      @doc """
+      Return required attribute keys
+      """
+      def required(entity) do
+        Enum.reduce(categories(entity), OrdSet.new(), &(OrdSet.merge(&2, &1.__required__())))
       end
 
       ###
       ### Priv
       ###
-      defp mod(entity, name) do
-	      model = OCCI.Model.Core.Entity.__defined_in__(entity) || @model
-	      model.mod(name)
-      end
-
       # raise OCCI.Error if missing attributes, else return entity
       defp complete(entity) do
-	      case missing_attributes(entity) do
-	        [] -> entity
-	        ids ->
-	          names = Enum.join(ids, " ")
-	          raise OCCI.Error, {422, "Missing attributes: #{names}"}
-	      end
+        case missing_attributes(entity) do
+          [] -> entity
+          ids ->
+            raise OCCI.Error, {422, "Missing attributes: " <> Enum.join(ids, " ")}
+        end
       end
 
       defp missing_attributes(entity) do
-	      Enum.reduce(categories(entity), [], fn cat, acc0 ->
-	        case mod(entity, cat) do
-	          nil -> acc0
-	          mod ->
-	            Enum.reduce(mod.required(), acc0, fn id, acc1 ->
-		            case OCCI.Model.Core.Entity.get(entity, id) do
-		              nil -> [ id | acc1 ]
-		              _ -> acc1
-		            end
-	            end)
-	        end
-	      end)
+        Enum.reduce(categories(entity), [], fn cat, acc0 ->
+          case cat do
+            nil -> acc0
+            mod ->
+              Enum.reduce(mod.__required__(), acc0, fn id, acc1 ->
+                case OCCI.Model.Core.Entity.get(entity, id) do
+                  nil -> [ id | acc1 ]
+                  _ -> acc1
+                end
+              end)
+          end
+        end)
       end
 
       defp __get__(entity, key, []), do: raise OCCI.Error, {422, "Undefined attribute: #{key}"}
       defp __get__(entity, key, [ cat | categories ]) do
 	      try do
-	        mod(entity, cat).__get__(entity, key)
+	        cat.__get__(entity, key)
 	      rescue
           KeyError -> __get__(entity, key, categories)
 	      end
@@ -125,8 +121,7 @@ defmodule OCCI.Kind do
       defp __set__(entity, key, value, []), do: raise OCCI.Error, {422, "Undefined attribute: #{key}"}
       defp __set__(entity, key, value, [ cat | categories ]) do
 	      try do
-	        mod = mod(entity, cat)
-	        mod.__set__(entity, key, value)
+	        cat.__set__(entity, key, value)
 	      rescue
           KeyError -> __set__(entity, key, value, categories)
 	      end
@@ -134,7 +129,7 @@ defmodule OCCI.Kind do
 
       defp parent!(nil), do: []
       defp parent!(parent) do
-	      OCCI.OrdSet.add(@model.mod(parent).parent!(), parent)
+	      OrdSet.add(parent.parent!(), parent)
       end
     end
   end

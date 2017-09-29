@@ -5,68 +5,56 @@ defmodule SimpleModelTest do
     use OCCI.Model,
       scheme: "http://example.org/occi/simple"
 
-    kind "http://example.org/occi/simple#mykind0",
-      parent: OCCI.Model.Core.Resource
+    alias OCCI.Model.Core
 
-    kind "http://example.org/occi/simple#mykindlink0",
-      parent: OCCI.Model.Core.Link,
+    kind MyKind0,
+      parent: Core.Resource
+
+    kind MyKindLink0,
+      parent: Core.Link,
       title: "My link category"
 
-    mixin "http://example.org/occi/simple#mymixin0"
+    mixin MyMixin0
   end
 
   test "Creates model" do
-    assert SimpleModel.kind?(:"http://example.org/occi/simple#mykind0")
-    assert SimpleModel.kind?(:"http://example.org/occi/simple#mykindlink0")
+    assert SimpleModel.kind?(SimpleModel.MyKind0)
+    assert SimpleModel.kind?(SimpleModel.MyKindLink0)
 
-    assert SimpleModel.mixin?(:"http://example.org/occi/simple#mymixin0")
-    assert Map.size(SimpleModel.mixins()) == 1
+    assert SimpleModel.mixin?(SimpleModel.MyMixin0)
+    assert length(SimpleModel.mixins()) == 1
   end
 
-  test "Updates model" do
-    SimpleModel.add_mixin("http://example.org/occi#mytag0")
-    assert SimpleModel.mixin?(:"http://example.org/occi#mytag0")
-    assert Map.size(SimpleModel.mixins) == 2
+  test "User mixins" do
+    assert match?(SimpleModelTest.SimpleModel.MyTag0, SimpleModel.add_mixin(MyTag0, "http://example.org/occi#mytag0"))
+    assert SimpleModel.mixin?(SimpleModelTest.SimpleModel.MyTag0)
+    assert length(SimpleModel.mixins()) == 2
 
-    SimpleModel.del_mixin("http://example.org/occi#mytag0")
-    assert not SimpleModel.mixin?(:"http://example.org/occi#mytag0")
-    assert Map.size(SimpleModel.mixins) == 1
-  end
+    assert match?(:ok, SimpleModel.del_mixin(SimpleModelTest.SimpleModel.MyTag0))
+    assert not SimpleModel.mixin?(SimpleModelTest.MyTag0)
+    assert length(SimpleModel.mixins()) == 1
+
+    assert match?(:error, SimpleModel.del_mixin(InvalidMixin))
+end
 
   test "Creates Kind module" do
-    modname = SimpleModel.mod(:"http://example.org/occi/simple#mykind0")
-    assert match?({:module, modname}, Code.ensure_loaded(modname))
-
-    modname = SimpleModel.mod(:"http://example.org/occi/simple#mykindlink0")
-    assert match?({:module, modname}, Code.ensure_loaded(modname))
-
-    assert match?(:"http://example.org/occi/simple#",
-      SimpleModel.mod(:"http://example.org/occi/simple#mykind0").scheme)
-    assert match?(:mykind0,
-      SimpleModel.mod(:"http://example.org/occi/simple#mykind0").term)
+    assert match?(:"http://example.org/occi/simple#", SimpleModel.MyKind0.scheme())
+    assert match?(:mykind0, SimpleModel.MyKind0.term())
   end
 
   test "Creates Mixin module" do
-    modname = SimpleModel.mod(:"http://example.org/occi/simple#mymixin0")
-    assert match?({:module, modname}, Code.ensure_loaded(modname))
-
-    assert match?(:"http://example.org/occi/simple#",
-      SimpleModel.mod(:"http://example.org/occi/simple#mymixin0").scheme)
-    assert match?(:mymixin0,
-      SimpleModel.mod(:"http://example.org/occi/simple#mymixin0").term)
+    assert match?(:"http://example.org/occi/simple#", SimpleModel.MyMixin0.scheme())
+    assert match?(:mymixin0, SimpleModel.MyMixin0.term())
   end
 
   test "Check title" do
     # Default kind title
-    assert match?("Kind http://example.org/occi/simple#mykind0",
-      SimpleModel.mod("http://example.org/occi/simple#mykind0").title())
+    assert match?("Kind http://example.org/occi/simple#mykind0", SimpleModel.MyKind0.title())
 
     # Default mixin title
-    assert match?("Mixin http://example.org/occi/simple#mymixin0",
-      SimpleModel.mod("http://example.org/occi/simple#mymixin0").title())
+    assert match?("Mixin http://example.org/occi/simple#mymixin0", SimpleModel.MyMixin0.title())
 
     # Custom title
-    assert match?("My link category",
-      SimpleModel.mod("http://example.org/occi/simple#mykindlink0").title())
+    assert match?("My link category", SimpleModel.MyKindLink0.title())
   end
 end

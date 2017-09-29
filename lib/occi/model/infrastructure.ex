@@ -8,7 +8,7 @@ defmodule OCCI.Model.Infrastructure do
   alias OCCI.Model.Core
   alias OCCI.Types
 
-  kind "http://schemas.ogf.org/occi/infrastructure#compute",
+  kind Compute,
     parent: Core.Resource,
     attributes: [
       "occi.compute.architecture": [
@@ -73,7 +73,7 @@ defmodule OCCI.Model.Infrastructure do
       ]
   end
 
-  kind "http://schemas.ogf.org/occi/infrastructure#storage",
+  kind Storage,
     parent: Core.Resource,
     attributes: [
       "occi.storage.size": [
@@ -93,7 +93,7 @@ defmodule OCCI.Model.Infrastructure do
       ]
     ]
 
-  kind "http://schemas.ogf.org/occi/infrastructure#storagelink",
+  kind StorageLink,
     parent: Core.Link,
     attributes: [
       "occi.storagelink.deviceid": [
@@ -117,7 +117,7 @@ defmodule OCCI.Model.Infrastructure do
       ]
     ]
 
-  kind "http://schemas.ogf.org/occi/infrastructure#network",
+  kind Network,
     parent: Core.Resource,
     attributes: [
       "occi.network.vlan": [
@@ -147,7 +147,7 @@ defmodule OCCI.Model.Infrastructure do
        title: "Bring the instance down"
   end
 
-  kind "http://schemas.ogf.org/occi/infrastructure#networkinterface",
+  kind NetworkInterface,
     parent: Core.Link,
     attributes: [
       "occi.networkinterface.interface": [
@@ -173,7 +173,8 @@ defmodule OCCI.Model.Infrastructure do
       ]
     ]
 
-  mixin "http://schemas.ogf.org/occi/infrastructure/network#ipnetwork",
+  mixin IPNetwork,
+    scheme: "http://schemas.ogf.org/occi/infrastructure/network",
     applies: [ "http://schemas.ogf.org/occi/infrastructure#network" ],
     attributes: [
       "occi.network.address": [
@@ -193,7 +194,8 @@ defmodule OCCI.Model.Infrastructure do
       ]
     ]
 
-  mixin "http://schemas.ogf.org/occi/infrastructure/networkinterface#ipnetworkinterface",
+  mixin IPNetworkInterface,
+    scheme: "http://schemas.ogf.org/occi/infrastructure/networkinterface",
     applies: [ "http://schemas.ogf.org/occi/infrastructure#networkinterface" ],
     attributes: [
       "occi.networkinterface.address": [
@@ -213,11 +215,15 @@ defmodule OCCI.Model.Infrastructure do
       ]
     ]
 
-  mixin "http://schemas.ogf.org/occi/infrastructure#os_tpl"
+  mixin OsTpl,
+    term: "os_tpl"
 
-  mixin "http://schemas.ogf.org/occi/infrastructure#resource_tpl"
+  mixin ResourceTpl,
+    term: "resource_tpl"
 
-  mixin "http://schemas.ogf.org/occi/infrastructure/credentials#ssh_key",
+  mixin SShKey,
+    scheme: "http://schemas.ogf.org/occi/infrastructure/credentials",
+    term: "ssh_key",
     applies: [ "http://schemas.ogf.org/occi/infrastructure#compute" ],
     attributes: [
       "occi.credentials.ssh.publickey": [
@@ -227,7 +233,9 @@ defmodule OCCI.Model.Infrastructure do
       ]
     ]
 
-  mixin "http://schemas.ogf.org/occi/infrastructure/compute#user_data",
+  mixin UserData,
+    scheme: "http://schemas.ogf.org/occi/infrastructure/compute",
+    term: "user_data",
     applies: [ "http://schemas.ogf.org/occi/infrastructure#compute" ],
     attributes: [
       "occi.compute.userdata": [

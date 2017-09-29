@@ -3,7 +3,7 @@ defmodule JsonTest do
 
   test "Parse JSON" do
     assert match?(%{
-          kind: :"http://schemas.ogf.org/occi/core#resource",
+          kind: OCCI.Model.Core.Resource,
           id: "/my/id",
           links: [
             "/a/link"

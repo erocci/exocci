@@ -5,113 +5,112 @@ defmodule ComplexModelTest do
     use OCCI.Model,
       scheme: "http://example.org/occi/complex"
 
-    kind "http://example.org/occi/complex#mykind0",
-      parent: OCCI.Model.Core.Resource
+    alias OCCI.Model.Core
 
-    kind "http://example.org/occi/complex#mykind1",
-      parent: "http://example.org/occi/complex#mykind0"
+    kind MyKind0,
+      parent: Core.Resource
 
-    kind "http://example.org/occi/complex#mykind2"
+    kind MyKind1,
+      parent: MyKind0
 
-    mixin "http://example.org/occi/complex#mymixin0"
+    kind MyKind2
 
-    mixin "http://example.org/occi/complex#mymixin1"
+    mixin MyMixin0
 
-    mixin "http://example.org/occi/complex#mymixin2"
+    mixin MyMixin1
 
-    mixin "http://example.org/occi/complex#mymixin10",
-      depends: ["http://example.org/occi/complex#mymixin0", "http://example.org/occi/complex#mymixin1"]
+    mixin MyMixin2
 
-    mixin "http://example.org/occi/complex#mymixin11",
-      depends: ["http://example.org/occi/complex#mymixin10"]
+    mixin MyMixin10,
+      depends: [ MyMixin0, MyMixin1 ]
 
-    mixin "http://example.org/occi/complex#mymixin12",
+    mixin MyMixin11,
+      depends: [ MyMixin10 ]
+
+    mixin MyMixin12,
       depends: [
-	      "http://example.org/occi/complex#mymixin10",
-	      "http://example.org/occi/complex#mymixin0",
-	      "http://example.org/occi/complex#mymixin2"
+	      MyMixin10,
+	      MyMixin0,
+	      MyMixin2
       ]
 
-    mixin "http://example.org/occi/complex#mymixin20",
-      applies: [ "http://example.org/occi/complex#mykind1" ]
+    mixin MyMixin20,
+      applies: [ MyKind1 ]
   end
 
-  test "Creates model" do
-    assert ComplexModel.kind?(:"http://example.org/occi/complex#mykind0")
-    assert ComplexModel.kind?(:"http://example.org/occi/complex#mykind1")
+  alias OCCI.Model.Core
 
-    assert ComplexModel.mixin?(:"http://example.org/occi/complex#mymixin0")
-    assert ComplexModel.mixin?(:"http://example.org/occi/complex#mymixin1")
-    assert ComplexModel.mixin?(:"http://example.org/occi/complex#mymixin10")
+  test "Creates model" do
+    assert ComplexModel.kind?(ComplexModel.MyKind0)
+    assert ComplexModel.kind?(ComplexModel.MyKind1)
+
+    assert ComplexModel.mixin?(ComplexModel.MyMixin0)
+    assert ComplexModel.mixin?(ComplexModel.MyMixin1)
+    assert ComplexModel.mixin?(ComplexModel.MyMixin10)
   end
 
   test "Check parents" do
     assert match?([
-      :"http://example.org/occi/complex#mykind0",
-      :"http://schemas.ogf.org/occi/core#resource",
-      :"http://schemas.ogf.org/occi/core#entity"
-    ], ComplexModel.mod(:"http://example.org/occi/complex#mykind1").parent!())
+      ComplexModel.MyKind0,
+      Core.Resource,
+      Core.Entity
+    ], ComplexModel.MyKind1.parent!())
   end
 
   test "Check mixin simple depends" do
     assert match?([
-      :"http://example.org/occi/complex#mymixin0",
-      :"http://example.org/occi/complex#mymixin1"
-    ], ComplexModel.mod(:"http://example.org/occi/complex#mymixin10").depends!())
+      ComplexModel.MyMixin0,
+      ComplexModel.MyMixin1
+    ], ComplexModel.MyMixin10.depends!())
   end
 
   test "Check mixin transitive depends" do
     assert match?([
-      :"http://example.org/occi/complex#mymixin10",
-      :"http://example.org/occi/complex#mymixin0",
-      :"http://example.org/occi/complex#mymixin1"
-    ], ComplexModel.mod(:"http://example.org/occi/complex#mymixin11").depends!())
+      ComplexModel.MyMixin10,
+      ComplexModel.MyMixin0,
+      ComplexModel.MyMixin1
+    ], ComplexModel.MyMixin11.depends!())
   end
 
   test "Check mixin complex depends" do
     assert match?([
-      :"http://example.org/occi/complex#mymixin10",
-      :"http://example.org/occi/complex#mymixin0",
-      :"http://example.org/occi/complex#mymixin1",
-      :"http://example.org/occi/complex#mymixin2"
-    ], ComplexModel.mod(:"http://example.org/occi/complex#mymixin12").depends!())
+      ComplexModel.MyMixin10,
+      ComplexModel.MyMixin0,
+      ComplexModel.MyMixin1,
+      ComplexModel.MyMixin2
+    ], ComplexModel.MyMixin12.depends!())
   end
 
   test "Check mixin applies" do
-    assert ComplexModel.mod(:"http://example.org/occi/complex#mymixin20").apply?(
-      "http://example.org/occi/complex#mykind1")
-    assert ComplexModel.mod(:"http://example.org/occi/complex#mymixin20").apply?(
-      "http://example.org/occi/complex#mykind0")
+    assert ComplexModel.MyMixin20.apply?(ComplexModel.MyKind1)
+    assert ComplexModel.MyMixin20.apply?(ComplexModel.MyKind0)
 
-    assert not ComplexModel.mod(:"http://example.org/occi/complex#mymixin20").apply?(
-      "http://example.org/occi/complex#mykind2")
+    assert not ComplexModel.MyMixin20.apply?(
+      ComplexModel.MyKind2)
   end
 
   test "Check entity categories" do
     assert match?([
-      :"http://example.org/occi/complex#mykind0",
-      :"http://schemas.ogf.org/occi/core#resource",
-      :"http://schemas.ogf.org/occi/core#entity"
-    ], ComplexModel.mod("http://example.org/occi/complex#mykind0").categories(
-      %{ kind: :"http://example.org/occi/complex#mykind0",
+      ComplexModel.MyKind0,
+      Core.Resource,
+      Core.Entity
+    ], ComplexModel.MyKind0.categories(
+      %{ kind: ComplexModel.MyKind0,
     	   mixins: [],
-         __node__: %{ defined_in: ComplexModel, created_in: ComplexModel }}))
+         __node__: %{ model: ComplexModel }}))
 
     assert match?([
-      :"http://example.org/occi/complex#mymixin1",
-      :"http://example.org/occi/complex#mymixin12",
-      :"http://example.org/occi/complex#mymixin10",
-      :"http://example.org/occi/complex#mymixin0",
-      :"http://example.org/occi/complex#mymixin2",
-      :"http://example.org/occi/complex#mykind0",
-      :"http://schemas.ogf.org/occi/core#resource",
-      :"http://schemas.ogf.org/occi/core#entity"
-    ], ComplexModel.mod("http://example.org/occi/complex#mykind0").categories(
-      %{ kind: :"http://example.org/occi/complex#mykind0",
-    	   mixins: [
-	         :"http://example.org/occi/complex#mymixin1",
-	         :"http://example.org/occi/complex#mymixin12"
-	       ],
-         __node__: %{ defined_in: ComplexModel, created_in: ComplexModel }}))
+      ComplexModel.MyMixin1,
+      ComplexModel.MyMixin12,
+      ComplexModel.MyMixin10,
+      ComplexModel.MyMixin0,
+      ComplexModel.MyMixin2,
+      ComplexModel.MyKind0,
+      Core.Resource,
+      Core.Entity
+    ], ComplexModel.MyKind0.categories(
+      %{ kind: ComplexModel.MyKind0,
+    	   mixins: [ ComplexModel.MyMixin1, ComplexModel.MyMixin12 ],
+         __node__: %{ model: ComplexModel }}))
   end
 end

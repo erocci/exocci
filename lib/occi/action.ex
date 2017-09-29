@@ -24,7 +24,7 @@ defmodule OCCI.Action do
           Action.set(acc, key, value)
         end)
 
-        missing = Enum.reduce(required(), [], fn id, acc ->
+        missing = Enum.reduce(__required__(), [], fn id, acc ->
           case Action.get(action, id) do
             nil -> [ id | acc ]
             _ -> acc
@@ -65,7 +65,7 @@ defmodule OCCI.Action do
   Return casted attributes, with default values for required ones, if necessary
   """
   def attributes(%{ mod: mod, attributes: attrs }) do
-    Enum.reduce(mod.required(), attrs, &(Map.put_new(&2, &1, Map.get(mod.__defaults__(), &1))))
+    Enum.reduce(mod.__required__(), attrs, &(Map.put_new(&2, &1, Map.get(mod.__defaults__(), &1))))
   end
 
   @doc """

@@ -7,7 +7,7 @@ defmodule OCCI.Attribute do
   @doc """
   Generate attribute specification
   """
-  @spec spec(name :: charlist() | String.t | atom, opts :: list) :: []
+  @spec spec(name :: charlist() | String.t | atom, opts :: list) :: opts :: []
   def spec(name, opts) do
     Enum.map(opts, fn
       {:type, type} -> {:check, Types.check(type)}
@@ -17,5 +17,14 @@ defmodule OCCI.Attribute do
       {k, v} -> {k, v}
     end)
     |> Keyword.put(:name, :"#{name}")
+  end
+
+  @doc false
+  # Returns list of required modules
+  def __required__({_, opts}, env) do
+    Enum.reduce(opts, [], fn
+      {:type, type}, acc -> OCCI.Types.__requires__(Macro.expand(type, env)) ++ acc
+      _, acc -> acc
+    end)
   end
 end

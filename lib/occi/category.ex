@@ -1,25 +1,45 @@
 defmodule OCCI.Category do
+  @moduledoc """
+  Use this module for building OCCI Category module.
+
+  Not intended to be used directly by user, but through `OCCI.Kind` / `OCCI.Mixin` modules
+  or `OCCI.Model.kind` and `OCCI.Model.Mixin` macros.
+  """
+
   alias OCCI.Category.Helpers
   alias OCCI.Attribute
 
+  @doc """
+  Requires the following arguments:
+  * `scheme` (atom): category scheme
+  * `term` (atom): category term
+  * `model` (alias | atom): model in which category is defined
+  """
   defmacro __using__(opts) do
-    name = Keyword.get_lazy(opts, :name,
-      fn -> raise "Missing argument: name" end)
+    scheme = Keyword.get_lazy(opts, :scheme,
+      fn -> raise "Missing argument: scheme" end)
+    term = Keyword.get_lazy(opts, :term,
+      fn -> raise "Missing argument: term" end)
+    category = :"#{scheme}##{term}"
     model = Keyword.get_lazy(opts, :model,
       fn -> raise "Missing argument: model" end)
     title = Keyword.get_lazy(opts, :title, fn ->
       case Keyword.get(opts, :type) do
-	      :kind -> "Kind #{name}"
-	      :mixin -> "Mixin #{name}"
-        :action -> "Action #{name}"
-	      _ -> "Category #{name}"
+	      :kind -> "Kind #{category}"
+	      :mixin -> "Mixin #{category}"
+        :action -> "Action #{category}"
+	      _ -> "Category #{category}"
       end
     end)
+    occi_type = Keyword.get(opts, :type)
     attr_specs = Keyword.get(opts, :attributes, [])
-    {scheme, term} = Helpers.__parse_category__(name)
+    for req <- Enum.flat_map(attr_specs, &(Attribute.__required__(&1, __CALLER__))) do
+      Module.eval_quoted(__CALLER__, {:require, [], [quote do unquote(req) end]})
+    end
 
     Module.put_attribute(__CALLER__.module, :attributes, [])
     Module.put_attribute(__CALLER__.module, :required, [])
+    Module.put_attribute(__CALLER__.module, :compile_requires, [])
 
     quote do
       require OCCI.Category
@@ -27,8 +47,9 @@ defmodule OCCI.Category do
       alias OCCI.Attribute
 
       @model unquote(model)
+      @occi_type unquote(occi_type)
 
-      @category unquote(name)
+      @category unquote(category)
       @scheme unquote(scheme)
       @term unquote(term)
       @title unquote(title)
@@ -48,8 +69,14 @@ defmodule OCCI.Category do
       def scheme, do: :"#{@scheme}#"
       def term, do: @term
       def title, do: @title
-      def required, do: @required
 
+      @doc false
+      def __required__, do: @required
+
+      @doc false
+      def __occi_type__, do: @occi_type
+
+      @doc false
       def __specs__, do: @attributes
 
       @before_compile OCCI.Category

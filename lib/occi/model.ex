@@ -2,10 +2,6 @@ defmodule OCCI.Model do
   @moduledoc """
   Use this module to define categories for your application.
 
-  Defines the following functions for creating entities:
-  * `new/1`: creates entity from map, similar to JSON rendering
-  * `new/3`: creates entity from kind, mixins and attributes
-
   Defines the following functions for manipulating categories:
   * `kind?/1`: check a kind is part of this model
   * `kinds/0`: returns list of supported kinds, including imported ones
@@ -27,12 +23,7 @@ defmodule OCCI.Model do
     import_core = Keyword.get(opts, :core, true)
     scheme = case Keyword.get(opts, :scheme) do
                nil -> raise "Using OCCI.Model requires :scheme arg"
-               s ->
-                 case String.split("#{s}", "#") do
-                   [s] -> :"#{s}"
-                   [s, ""] -> :"#{s}"
-                   _ -> raise "Invalid syntax for :scheme"
-                 end
+               s -> Helpers.__valid_scheme__(s)
              end
     Module.put_attribute(__CALLER__.module, :scheme, scheme)
 
@@ -41,114 +32,39 @@ defmodule OCCI.Model do
     Module.put_attribute(__CALLER__.module, :kinds, Map.new)
     Module.put_attribute(__CALLER__.module, :mixins, Map.new)
     Module.put_attribute(__CALLER__.module, :actions, [])
-    Module.put_attribute(__CALLER__.module, :action_mods, [])
 
     quote do
       require OCCI.Model
       import OCCI.Model
-
-      import OCCI.Category, only: [action: 2]
 
       if unquote(import_core) do
 	      imports = Module.get_attribute(__MODULE__, :imports)
 	      Module.put_attribute(__MODULE__, :imports, OrdSet.add(imports, OCCI.Model.Core))
       end
 
-      def_user_mixins(unquote(user_mixins_mod), Map.new)
+      defmodule unquote(user_mixins_mod) do
+        @doc false
+        def mixins, do: []
 
-      def new(data) when is_map(data) do
-        kind = Map.get_lazy(data, :kind, fn -> raise OCCI.Error, {422, "Missing attribute: kind"} end)
-        mixins = Map.get(data, :mixins, [])
-        case mod(kind) do
-          nil -> raise OCCI.Error, {422, "Invalid category: #{kind}"}
-          mod -> mod(kind).new(data, mixins, __MODULE__)
-        end
+        @doc false
+        def __mixins__, do: Map.new()
       end
 
-      def new(kind, attributes, mixins \\ []) do
-        case mod(kind) do
-          nil -> raise OCCI.Error, {422, "Invalid category: #{kind}"}
-	        mod -> mod(kind).new(attributes, mixins, __MODULE__)
-        end
-      end
 
       @doc """
-      Return true if `name` is a valid kind id
+      Return true if `name` is a valid kind module
       """
-      @spec kind?(charlist() | String.t | atom) :: boolean
-      def kind?(name) do
-	      name = :"#{name}"
-	      Map.has_key?(@kinds, name) or Enum.any?(@imports, &(&1.kind?(name)))
+      @spec kind?(atom) :: boolean
+      def kind?(mod) when is_atom(mod) do
+        function_exported?(mod, :__occi_type__, 0) and mod.__occi_type__() == :kind
       end
 
       @doc """
-      Return available kinds in this model and imported ones as a map id -> module
+      Return true if `name` if a valid mixin module
       """
-      @spec kinds() :: map
-      def kinds do
-	      Enum.reduce(@imports, @kinds,
-	        &(Map.merge(&1.kinds(), &2)))
-      end
-
-      @doc """
-      Return true if `name` if a valid mixin id
-      """
-      @spec mixin?(charlist() | String.t | atom) :: boolean
-      def mixin?(name) do
-	      name = :"#{name}"
-	      Map.has_key?(@mixins, name)
-	      or Map.has_key?(unquote(user_mixins_mod).mixins(), name)
-	      or Enum.any?(@imports, &(&1.mixin?(name)))
-      end
-
-      @doc """
-      Return defined mixins in this model and imported ones
-      """
-      @spec mixins() :: map
-      def mixins do
-	      Enum.reduce(@imports, Map.merge(@mixins, unquote(user_mixins_mod).mixins()),
-	        &(Map.merge(&1.mixins(), &2)))
-      end
-
-      @doc """
-      Add user mixin (tag)
-      """
-      @spec add_mixin(charlist() | String.t | atom) :: :ok
-      def add_mixin(name) do
-	      mixins = Map.put(unquote(user_mixins_mod).mixins(), :"#{name}", nil)
-        OCCI.Model.def_user_mixins(unquote(user_mixins_mod), mixins)
-      end
-
-      @doc """
-      Delete user mixin (tag)
-      """
-      @spec del_mixin(charlist() | String.t | atom) :: :ok
-      def del_mixin(name) do
-        mixins = unquote(user_mixins_mod).mixins() |> Map.delete(:"#{name}")
-        OCCI.Model.def_user_mixins(unquote(user_mixins_mod), mixins)
-      end
-
-      @doc """
-      Return title of given category
-      """
-      @spec title(String.t | charlist() | atom) :: String.t
-      def title(category), do: mod(category).title
-
-      @doc """
-      Return module name for a given category id
-
-      TODO: might it be hidden for user ?
-      """
-      @spec mod(charlist() | String.t | atom) :: atom
-      def mod(name) do
-	      name = :"#{name}"
-	      Map.get_lazy(@kinds, name, fn ->
-	        Map.get_lazy(@mixins, name, fn ->
-	          Map.get_lazy(unquote(user_mixins_mod).mixins(), name, fn ->
-	            Enum.find_value(@imports, &(&1.mod(name)))
-	          end)
-	        end)
-	      end)
+      @spec mixin?(atom) :: boolean
+      def mixin?(mod) when is_atom(mod) do
+        function_exported?(mod, :__occi_type__, 0) and mod.__occi_type__() == :mixin
       end
 
       @doc """
@@ -156,7 +72,7 @@ defmodule OCCI.Model do
       """
       def specs(categories) do
         Enum.reduce(categories, OrdSet.new(), fn category, acc ->
-          OrdSet.merge(acc, mod(category).__specs__())
+          OrdSet.merge(acc, category.__specs__())
         end)
       end
 
@@ -165,7 +81,7 @@ defmodule OCCI.Model do
       """
       def required(categories) do
         Enum.reduce(categories, OrdSet.new(), fn category, acc ->
-          OrdSet.merge(acc, mod(category).required())
+          OrdSet.merge(acc, category.required())
         end)
       end
 
@@ -174,16 +90,76 @@ defmodule OCCI.Model do
       """
       def actions(categories) do
         Enum.reduce(categories, OrdSet.new(), fn category, acc ->
-          OrdSet.merge(acc, mod(category).__actions__())
+          OrdSet.merge(acc, category.__actions__())
         end)
+      end
+
+      @doc """
+      Return list of available mixins
+      """
+      @spec mixins() :: [ atom ]
+      def mixins do
+        Enum.reduce(@imports, OrdSet.merge(Map.values(@mixins), unquote(user_mixins_mod).mixins()),
+          &(OrdSet.merge(&1.mixins(), &2)))
+      end
+
+      @doc """
+      Add user mixin (tag)
+
+      * `module`: module name, related to model name
+      * `category`: category name
+      """
+      @spec add_mixin(module :: atom, category :: charlist() | String.t | atom) :: atom
+      def add_mixin(module, category) do
+        module = Module.concat(Module.split(__MODULE__) ++ Module.split(module))
+        {scheme, term} = Helpers.__parse_category__(category)
+        args = [ {:model, __MODULE__}, {:scheme, scheme}, {:term, term}, {:tag, true} ]
+        q = quote do
+          defmodule unquote(module) do
+            use OCCI.Mixin, unquote(args)
+          end
+        end
+        _ = Code.compile_quoted(q)
+
+        :ok = update_user_mixins(Map.put(unquote(user_mixins_mod).__mixins__(), :"#{category}", module))
+        module
+      end
+
+      @doc """
+      Delete user mixin (tag)
+      """
+      @spec del_mixin(module :: atom) :: :ok | :error
+      def del_mixin(module) do
+        if function_exported?(module, :__occi_type__, 0) and module.__occi_type__() == :mixin and module.tag?() do
+          category = module.category()
+          true = :code.delete(module)
+          :ok = update_user_mixins(unquote(user_mixins_mod).__mixins__() |> Map.delete(category))
+        else
+          :error
+        end
+      end
+
+      @doc """
+      Return module associated with the given category
+      """
+      @spec module(charlist() | String.t | atom) :: atom
+      def module(name) do
+	      name = :"#{name}"
+	      Map.get_lazy(@kinds, name, fn ->
+	        Map.get_lazy(@mixins, name, fn ->
+	          Map.get_lazy(unquote(user_mixins_mod).mixins(), name, fn ->
+	            Enum.find_value(@imports, &(&1.module(name)))
+	          end)
+	        end)
+	      end)
       end
 
       @doc """
       Returns list of mixins applicable to a given kind
       """
       def applicable_mixins(kind) do
-        Enum.reduce(mixins(), [], fn {id, _}, acc ->
-          if mod(id).apply?(kind), do: [ id | acc ], else: acc
+        Enum.reduce(mixins(), [], fn mixin, acc ->
+          if mixin.apply?(kind), do: [ mixin | acc ], else: acc
         end)
       end
 
@@ -203,7 +179,7 @@ defmodule OCCI.Model do
         attrs = OCCI.Action.attributes(action)
         related = OCCI.Action.related(action)
         related_mod = OCCI.Action.__related_mod__(action)
-        model = OCCI.Model.Core.Entity.__created_in__(entity)
+        model = OCCI.Model.Core.Entity.__model__(entity)
         __exec__(entity, attrs, related, related_mod, fun, [ model | model.__imports__() ])
       end
 
@@ -223,15 +199,33 @@ defmodule OCCI.Model do
         end
       end
 
+      defp update_user_mixins(mixins) do
+        mixins = Macro.escape(mixins)
+        mod = unquote(user_mixins_mod)
+        q = quote do
+          defmodule unquote(mod) do
+            @mixins unquote(mixins)
+
+            @doc """
+            Return list of user mixins
+            """
+            def mixins, do: Map.values(@mixins)
+
+            @doc false
+            def __mixins__, do: @mixins
+          end
+        end
+        _ = Code.compiler_options(ignore_module_conflict: true)
+        _ = Code.compile_quoted(q)
+        :ok
+      end
+
       @before_compile OCCI.Model
     end
   end
 
   @doc false
   defmacro __before_compile__(env) do
-    # Generate action implementations
-    Helpers.__def_actions__(env)
-
     # Generate documentation
     {line, doc} = case Module.get_attribute(env.module, :moduledoc) do
                     nil -> {2, ""}
@@ -259,25 +253,44 @@ defmodule OCCI.Model do
 
   @doc """
   Defines a new kind
+
+  Args:
+  * parent: category or module kind's parent
+  * scheme: if different from model's scheme
+  * term: if different from lower-case module name
+  * title: kind's description
   """
-  defmacro kind(name, args \\ [], do_block \\ nil) do
-    modname = Helpers.__mod_name__(name, args, __CALLER__)
-    name = name |> Helpers.__to_atom__
+  defmacro kind({:__aliases__, _, name}, args \\ [], do_block \\ nil) do
     model = __CALLER__.module
+    term = case Keyword.get(args, :term) do
+             nil ->
+               t = String.downcase(Enum.join(name, ""))
+               :"#{t}"
+             t -> :"#{t}"
+           end
+    scheme = case Keyword.get(args, :scheme) do
+               nil -> Module.get_attribute(model, :scheme)
+               s -> Helpers.__valid_scheme__(s)
+             end
+    modname = Helpers.__merge_modules__(model, name)
+
     parent = case Keyword.get(args, :parent) do
-	             {:__aliases__, _, _}=aliases ->
-		             Macro.expand(aliases, __CALLER__).category()
+	             {:__aliases__, _, _}=aliases -> Macro.expand(aliases, __CALLER__)
 	             nil -> nil
-	             p -> :"#{p}"
+	             p -> model.__mod__(p)
 	           end
     args = [
-      {:name, name},
       {:model, model},
-      {:parent, parent}
+      {:parent, parent},
+      {:scheme, scheme},
+      {:term, term}
       | args ]
 
     kinds = Module.get_attribute(model, :kinds)
-    Module.put_attribute(model, :kinds, Map.put(kinds, name, modname))
+    Module.put_attribute(model, :kinds,
+      Map.put(kinds, :"#{scheme}##{term}", Macro.expand(modname, __CALLER__)))
+
+    do_block = do_block || Keyword.get(args, :do)
 
     quote do
       defmodule unquote(modname) do
@@ -291,20 +304,33 @@ defmodule OCCI.Model do
   @doc """
   Defines a new mixin
   """
-  defmacro mixin(name, args \\ [], do_block \\ nil) do
+  defmacro mixin({:__aliases__, _, name}, args \\ [], do_block \\ nil) do
     model = __CALLER__.module
-    name = name |> Helpers.__to_atom__
-    modname = Helpers.__mod_name__(name, args, __CALLER__)
+    term = case Keyword.get(args, :term) do
+             nil ->
+               t = String.downcase(Enum.join(name, ""))
+               :"#{t}"
+             t -> :"#{t}"
+           end
+    scheme = case Keyword.get(args, :scheme) do
+               nil -> Module.get_attribute(model, :scheme)
+               s -> Helpers.__valid_scheme__(s)
+             end
+    modname = Helpers.__merge_modules__(model, name)
+
     args = [
-      {:name, name}, {:model, model},
+      {:model, model},
       {:depends, Keyword.get(args, :depends, [])},
-      {:applies, Keyword.get(args, :applies, [])}
+      {:applies, Keyword.get(args, :applies, [])},
+      {:scheme, scheme},
+      {:term, term}
       | args ]
 
     do_block = do_block || Keyword.get(args, :do)
 
     mixins = Module.get_attribute(model, :mixins)
-    Module.put_attribute(model, :mixins, Map.put(mixins, name, modname))
+    Module.put_attribute(model, :mixins,
+      Map.put(mixins, :"#{scheme}##{term}", Macro.expand(modname, __CALLER__)))
 
     quote do
       defmodule unquote(modname) do
@@ -313,18 +339,6 @@ defmodule OCCI.Model do
 	      unquote(do_block)
       end
     end
-  end
-
-  def def_user_mixins(mod, user_mixins) do
-    user_mixins = Macro.escape(user_mixins)
-    quoted = quote do
-      defmodule unquote(mod) do
-        def mixins, do: unquote(user_mixins)
-      end
-    end
-    _ = Code.compiler_options(ignore_module_conflict: true)
-    _ = Code.compile_quoted(quoted)
-    :ok
   end
 
   ###

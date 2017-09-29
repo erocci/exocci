@@ -2,8 +2,10 @@ defmodule OCCI.Mixin do
   alias OCCI.Category.Helpers
 
   defmacro __using__(opts) do
-    depends = Keyword.get(opts, :depends, []) |> Enum.map(&(:"#{&1}"))
-    applies = Keyword.get(opts, :applies, []) |> Enum.map(&(:"#{&1}"))
+    tag = Keyword.get(opts, :tag, false)
+
+    depends = Keyword.get(opts, :depends, []) |> Enum.map(&(Macro.expand(&1, __CALLER__)))
+    applies = Keyword.get(opts, :applies, []) |> Enum.map(&(Macro.expand(&1, __CALLER__)))
 
     opts = [ {:type, :mixin} | opts ]
 
@@ -13,6 +15,8 @@ defmodule OCCI.Mixin do
     quote do
       use OCCI.Category, unquote(opts)
       @before_compile OCCI.Mixin
+
+      @tag unquote(tag)
 
       @depends unquote(depends)
       @applies unquote(applies)
@@ -25,22 +29,26 @@ defmodule OCCI.Mixin do
 	        if dep in acc do
 	          acc
 	        else
-	          depends = case @model.mod(dep) do
-			                  nil -> []
-			                  mod -> mod.depends!()
-		                  end
+	          depends = dep.depends!()
 	          acc ++ [ dep | depends ]
 	        end
 	      end)
       end
 
+      @doc """
+      Return true if this mixin applies to the given kind
+      """
       def apply?(kind) do
-	      kind = :"#{kind}"
 	      Enum.any?(@applies, fn
 	        ^kind -> true
-	        apply -> Enum.any?(@model.mod(apply).parent!(), fn ^kind -> true; _ -> false end)
+	        apply -> Enum.any?(apply.parent!(), fn ^kind -> true; _ -> false end)
 	      end)
       end
+
+      @doc """
+      Return true if mixin is user defined (tag)
+      """
+      def tag?, do: @tag
     end
   end
 

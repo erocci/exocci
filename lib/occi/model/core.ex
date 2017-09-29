@@ -3,7 +3,7 @@ defmodule OCCI.Model.Core do
     core: false,
     scheme: "http://schemas.ogf.org/occi/core"
 
-  kind "http://schemas.ogf.org/occi/core#entity", alias: Entity do
+  kind Entity do
     alias OCCI.Types
     alias OCCI.Model.Core.Entity
 
@@ -83,10 +83,7 @@ defmodule OCCI.Model.Core do
     end
 
     @doc false
-    def __defined_in__(entity), do: entity.__node__.defined_in
-
-    @doc false
-    def __created_in__(entity), do: entity.__node__.created_in
+    def __model__(entity), do: entity.__node__.model
 
     def node(entity), do: entity.__node__
     def node(entity, node), do: %{ entity | __node__: node }
@@ -113,9 +110,8 @@ defmodule OCCI.Model.Core do
     end
   end
 
-  kind "http://schemas.ogf.org/occi/core#resource",
-    parent: "http://schemas.ogf.org/occi/core#entity",
-    alias: Resource do
+  kind Resource,
+    parent: Entity do
     alias OCCI.Types
 
     attribute "occi.core.summary",
@@ -138,8 +134,8 @@ defmodule OCCI.Model.Core do
     defdelegate rm_mixin(entity, mixin), to: Entity
   end
 
-  kind "http://schemas.ogf.org/occi/core#link",
-    parent: "http://schemas.ogf.org/occi/core#entity",
+  kind Link,
+    parent: Entity,
     alias: Link do
     alias OCCI.Types
     alias OCCI.Model.Core.Entity
@@ -173,7 +169,7 @@ defmodule OCCI.Model.Core do
     def target_kind(link), do: get_in(link, [:target, :kind])
     def target_kind(link, kind) do
       target = Map.get(link, :target, %{})
-      model = Entity.__created_in__(link) || @model
+      model = Entity.__model__(link) || @model
       casted = Types.Kind.cast(kind, model)
       Map.put(link, :target, Map.put(target, :kind, casted))
     end

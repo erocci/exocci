@@ -69,7 +69,7 @@ defmodule OCCI.Category.Helpers do
     if List.keymember?(actions, name, 0) do
       raise OCCI.Error, {422, "Action '#{name}' already defined"}
     else
-      modname = Module.concat([env.module, Actions, Macro.camelize("#{name}")])
+      modname = action_module(env, name)
       Module.put_attribute(env.module, :action_mods, [ {name, modname} | Module.get_attribute(env.module, :action_mods) ])
       Module.put_attribute(env.module, :actions, [ spec | actions ])
     end
@@ -81,11 +81,12 @@ defmodule OCCI.Category.Helpers do
     specs = Module.get_attribute(env.module, :actions)
 
     for {name, args, opts, do_block} <- specs do
-      category = action_id(name, opts, env)
+      {scheme, term} = action_id(name, opts, env)
+      category = :"#{scheme}##{term}"
       modname = Keyword.get(Module.get_attribute(env.module, :action_mods), name)
-      # modname = Module.concat([env.module, Actions, Macro.camelize("#{name}")])
       opts = [
-        {:name, category},
+        {:scheme, scheme},
+        {:term, term},
         {:model, Module.get_attribute(env.module, :model)},
         {:related, Module.get_attribute(env.module, :category)},
         {:related_mod, env.module}
@@ -139,16 +140,6 @@ defmodule OCCI.Category.Helpers do
   end
 
   @doc false
-  def __mod_name__(name, args, env) do
-    case Keyword.get(args, :alias) do
-      nil ->
-	      mod_encode("#{name}", env)
-      {:__aliases__, _, _}=aliases ->
-	      Module.concat([env.module, Macro.expand(aliases, env)])
-    end
-  end
-
-  @doc false
   def __to_atom__(nil), do: nil
   def __to_atom__(s), do: :"#{s}"
 
@@ -160,36 +151,55 @@ defmodule OCCI.Category.Helpers do
     end
   end
 
+  @doc false
+  def __valid_scheme__(scheme) do
+    case String.split("#{scheme}", "#") do
+      [s] -> :"#{s}"
+      [s, ""] -> :"#{s}"
+      _ -> raise "Invalid syntax for scheme: #{scheme}"
+    end
+  end
+
+  @doc false
+  def __merge_modules__(mod1, mod2) when is_list(mod1) and is_list(mod2) do
+    Module.concat(mod1 ++ mod2)
+  end
+  def __merge_modules__(mod1, mod2) when is_atom(mod1), do: __merge_modules__(Module.split(mod1), mod2)
+  def __merge_modules__(mod1, mod2) when is_atom(mod2), do: __merge_modules__(mod1, Module.split(mod2))
+
   ###
   ### Priv
   ###
-  defp action_id(name, opts, env) do
-    case Keyword.get(opts, :category) do
-		  nil ->
-		    scheme = Module.get_attribute(env.module, :scheme)
-		    term = Module.get_attribute(env.module, :term)
-		    :"#{scheme}/#{term}/action##{name}"
-		  cat ->
-		    :"#{cat}"
-		end
+  defp action_module(env, name) do
+    Module.concat([env.module, Actions, Macro.camelize("#{name}")])
   end
 
-  defp mod_encode(name, env) do
-    case String.split(name, "#") do
-      [_scheme, term] ->
-        categories = Map.merge(Module.get_attribute(env.module, :kinds), Module.get_attribute(env.module, :mixins))
-        newmod = Module.concat([env.module, Macro.camelize(term)])
-        exist = Enum.any?(categories, fn {_, mod} ->
-          Module.concat([mod]) == newmod
-        end)
-        if exist do
-          raise OCCI.Error, {422, "Category with term '#{Macro.camelize(term)}' already exists in this model, please alias it."}
-        else
-          newmod
-        end
-      _ -> raise OCCI.Error, {422, "Invalid category : #{name}"}
-    end
+  defp action_id(name, opts, env) do
+    scheme = Keyword.get_lazy(opts, :scheme, fn ->
+      Module.get_attribute(env.module, :scheme)
+    end)
+    term = Keyword.get_lazy(opts, :term, fn ->
+      Module.get_attribute(env.module, :term)
+    end)
+    {:"#{scheme}/#{term}#", :"#{name}"}
   end
+
+  # defp mod_encode(name, env) do
+  #   case String.split(name, "#") do
+  #     [_scheme, term] ->
+  #       categories = Map.merge(Module.get_attribute(env.module, :kinds), Module.get_attribute(env.module, :mixins))
+  #       newmod = Module.concat([env.module, Macro.camelize(term)])
+  #       exist = Enum.any?(categories, fn {_, mod} ->
+  #         Module.concat([mod]) == newmod
+  #       end)
+  #       if exist do
+  #         raise OCCI.Error, {422, "Category with term '#{Macro.camelize(term)}' already exists in this model, please alias it."}
+  #       else
+  #         newmod
+  #       end
+  #     _ -> raise OCCI.Error, {422, "Invalid category : #{name}"}
+  #   end
+  # end
 
   defp getter(name, nil, default) do
     quote do

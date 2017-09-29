@@ -4,18 +4,16 @@ defmodule CoreModelTest do
   test "Check entity instanciation" do
     # Entity is abstract, can not be instantiated
     assert_raise UndefinedFunctionError, fn ->
-      OCCI.Model.Core.mod("http://schemas.ogf.org/occi/core#entity").new()
+      OCCI.Model.Core.Entity.new()
     end
   end
 
   test "Check resource instanciation" do
-    assert match?(%{ kind: :"http://schemas.ogf.org/occi/core#resource" },
-      OCCI.Model.Core.mod("http://schemas.ogf.org/occi/core#resource").new(%{ id: "an id"}))
+    assert match?(%{ kind: OCCI.Model.Core.Resource }, OCCI.Model.Core.Resource.new(%{ id: "an id"}))
   end
 
   test "Check link instanciation" do
-    assert match?(%{ kind: :"http://schemas.ogf.org/occi/core#link" },
-      OCCI.Model.Core.mod("http://schemas.ogf.org/occi/core#link").new(%{
-	    id: "an id", source: "/source", target: "/target" }))
+    assert match?(%{ kind: OCCI.Model.Core.Link },
+      OCCI.Model.Core.Link.new(%{ id: "an id", source: "/source", target: "/target" }))
   end
 end

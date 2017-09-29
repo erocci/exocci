@@ -4,12 +4,12 @@ defmodule OCCI.Node do
   """
   @type location :: String.t
 
-  defstruct [:location, :owner, :serial, :defined_in, :created_in]
+  defstruct [:location, :owner, :serial, :model]
 
   @type t :: %OCCI.Node{
     location: location,
     owner: {String.t, String.t} | nil,
     serial: String.t | nil,
-    defined_in: atom,
-    created_in: atom}
+    model: atom
+  }
 end

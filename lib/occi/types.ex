@@ -36,6 +36,11 @@ defmodule OCCI.Types do
   def check(mod) when is_atom(mod) do
     check({mod, []})
   end
+
+  @doc false
+  def __requires__(type) when is_list(type), do: [OCCI.Types.Enum]
+  def __requires__({mod, _}), do: [mod]
+  def __requires__(mod) when is_atom(mod), do: [mod]
 end
 
 defmodule OCCI.Types.String do
