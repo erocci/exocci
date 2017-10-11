@@ -7,65 +7,59 @@ defmodule ActionsTest do
     use OCCI.Model,
       scheme: "http://example.org/occi#"
 
-    kind Compute,
+    kind Kind0,
       parent: Core.Resource,
       attributes: [
-        killed: [default: false, type: OCCI.Types.Boolean],
-	      status: [default: :active, type: [:active, :inactive, :schrodinger]]
+        attr0: [type: OCCI.Types.String]
       ] do
 
-      action stop(entity, _attrs),
-	      title: "Stop the compute entity",
+      action action0(entity, %{ reason: reason }),
+	      title: "An action",
 	      attributes: [
-	        method: [type: [:kill, :term], required: true],
 	        reason: [type: OCCI.Types.String]
 	      ] do
-	      set(entity, :status, :inactive)
+	      set(entity, :attr0, reason)
       end
-
-      action action0,
-	      title: "An action",
-	      category: "http://example.org/an/arbitrary/name#action0"
     end
 
-    # mixin "http://example.org/occi/compute#mixin",
+    # mixin Mixin0,
     #   title: "A mixin"
     #   do
     #   action stop(entity, _attrs) do
     #     OCCI.Model.Core.Entity.set(entity, :status, :schrodinger)
-    #   end
+    #    end
     # end
   end
 
-  defmodule ActionsModel2 do
-    use OCCI.Model,
-      scheme: "http://example.org/occi2#"
+  # defmodule ActionsModel2 do
+  #   use OCCI.Model,
+  #     scheme: "http://example.org/occi2#"
 
-    extends ActionsModel
+  #   extends ActionsModel
 
-    # action :'http://example.org/occi/compute/action#stop'.(entity, %{ method: method }) do
-    #   OCCI.Model.Core.Entity.set(entity, :killed, true)
-    # end
-  end
+  #   # action :'http://example.org/occi/compute/action#stop'.(entity, %{ method: method }) do
+  #   #   OCCI.Model.Core.Entity.set(entity, :killed, true)
+  #   # end
+  # end
 
-  test "Launch action" do
-    res = ActionsModel.Compute.new(%{ id: "/an_id" })
-    assert match?(:inactive,
-      Core.Entity.get(ActionsModel.Compute.stop(res, %{ method: :term }), :status))
-  end
+  # test "Launch action" do
+  #   res = ActionsModel.Kind0.new(%{ id: "/an_id" })
+  #   assert match?("personal reason",
+  #     Core.Entity.get(ActionsModel.Compute.action0(res, %{ reason: "personal reason" }), :attr0))
+  # end
 
-  test "Invalid action argument" do
-    res = ActionsModel.Compute.new(%{ id: "/an_id" })
-    assert_raise OCCI.Error, fn ->
-      ActionsModel.Compute.stop(res, %{})
-    end
-  end
+  # test "Invalid action argument" do
+  #   res = ActionsModel.Kind0.new(%{ id: "/an_id" })
+  #   assert_raise OCCI.Error, fn ->
+  #     ActionsModel.Kind0.action0(res, %{})
+  #   end
+  # end
 
-  test "Launch action with default implementation" do
-    res = ActionsModel.Compute.new(%{ id: "/an_id" })
-    assert match?(:active,
-      Core.Entity.get(ActionsModel.Compute.action0(res, %{}), :status))
-  end
+  # test "Launch action with default implementation" do
+  #   res = ActionsModel.Compute.new(%{ id: "/an_id" })
+  #   assert match?(:active,
+  #     Core.Entity.get(ActionsModel.Compute.action0(res, %{}), :status))
+  # end
 
   # test "Launch action with overriden implementation" do
   #   res = ActionsModel2.new("http://example.org/occi#compute", %{ id: "/an_id" })

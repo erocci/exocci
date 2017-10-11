@@ -32,20 +32,21 @@ defmodule OCCI.Category.Helpers do
     end)
     Module.put_attribute(env.module, :defaults, defaults)
 
+    # Defined in case category does not defines any attribute
     last_clauses = [{
       quote do
-        def __get__(entity, name), do: raise KeyError, key: name, term: entity
+        def __fetch_this__(entity, name), do: raise FunctionClauseError
       end,
       quote do
-        def __set__(entity, name, _), do: raise KeyError, key: name, term: entity
+        def __set__(entity, name, _), do: raise FunctionClauseError
       end
     }]
     clauses = Enum.reduce(specs, last_clauses, fn spec, acc ->
       name = Keyword.get(spec, :name)
-      getter = getter(name, Keyword.get(spec, :get), Keyword.get(spec, :default))
+      fetcher = fetcher(name, Keyword.get(spec, :get), Keyword.get(spec, :default))
       setter = setter(name, Keyword.get(spec, :set), Keyword.get(spec, :check))
 
-      acc = [ {getter, setter} | acc ]
+      acc = [ {fetcher, setter} | acc ]
 
       case Keyword.get(spec, :alias) do
 	      nil -> acc
@@ -53,8 +54,8 @@ defmodule OCCI.Category.Helpers do
       end
     end)
 
-    for {getter, _} <- clauses do
-      Module.eval_quoted(env.module, getter)
+    for {fetcher, _} <- clauses do
+      Module.eval_quoted(env.module, fetcher)
     end
 
     for {_, setter} <- clauses do
@@ -184,41 +185,24 @@ defmodule OCCI.Category.Helpers do
     {:"#{scheme}/#{term}#", :"#{name}"}
   end
 
-  # defp mod_encode(name, env) do
-  #   case String.split(name, "#") do
-  #     [_scheme, term] ->
-  #       categories = Map.merge(Module.get_attribute(env.module, :kinds), Module.get_attribute(env.module, :mixins))
-  #       newmod = Module.concat([env.module, Macro.camelize(term)])
-  #       exist = Enum.any?(categories, fn {_, mod} ->
-  #         Module.concat([mod]) == newmod
-  #       end)
-  #       if exist do
-  #         raise OCCI.Error, {422, "Category with term '#{Macro.camelize(term)}' already exists in this model, please alias it."}
-  #       else
-  #         newmod
-  #       end
-  #     _ -> raise OCCI.Error, {422, "Invalid category : #{name}"}
-  #   end
-  # end
-
-  defp getter(name, nil, default) do
+  defp fetcher(name, nil, default) do
     quote do
-      def __get__(entity, unquote(name)) do
-	      Map.get(entity.attributes, unquote(name), unquote(default))
+      def __fetch_this__(entity, unquote(name)) do
+        {:ok, Map.get(entity.attributes, unquote(name), unquote(default))}
       end
     end
   end
-  defp getter(name, custom, _) do
+  defp fetcher(name, custom, _) do
     quote do
-      def __get__(entity, unquote(name)) do
-	      unquote(custom).(entity)
+      def __fetch_this__(entity, unquote(name)) do
+        {:ok, unquote(custom).(entity)}
       end
     end
   end
 
   defp getter_alias(name, alias_) do
     quote do
-      def __get__(entity, unquote(alias_)), do: __get__(entity, unquote(name))
+      def __fetch_this__(entity, unquote(alias_)), do: __fetch_this__(entity, unquote(name))
     end
   end
 

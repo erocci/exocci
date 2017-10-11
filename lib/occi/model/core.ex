@@ -45,7 +45,7 @@ defmodule OCCI.Model.Core do
       set: &Entity.serial/2
 
     attribute :model,
-      get: &Entity.__defined_in__/1
+      get: &Entity.__model__/1
 
     attribute :node,
       get: &Entity.node/1,
@@ -135,8 +135,7 @@ defmodule OCCI.Model.Core do
   end
 
   kind Link,
-    parent: Entity,
-    alias: Link do
+    parent: Entity do
     alias OCCI.Types
     alias OCCI.Model.Core.Entity
 
@@ -154,13 +153,13 @@ defmodule OCCI.Model.Core do
       get: &Link.target_kind/1,
       set: &Link.target_kind/2
 
-    def source(link), do: get_in(link, [:source, :location])
+    def source(link), do: link |> Map.get(:source, %{}) |> Map.get(:location, nil)
     def source(link, uri) do
       src = Map.get(link, :source, %{})
       Map.put(link, :source, Map.put(src, :location, Types.URI.cast(uri)))
     end
 
-    def target(link), do: get_in(link, [:target, :location])
+    def target(link), do: link |> Map.get(:target, %{}) |> Map.get(:location, nil)
     def target(link, uri) do
       target = Map.get(link, :target, %{})
       Map.put(link, :target, Map.put(target, :location, Types.URI.cast(uri)))

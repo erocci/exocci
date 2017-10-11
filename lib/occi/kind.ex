@@ -11,8 +11,20 @@ defmodule OCCI.Kind do
       alias OCCI.OrdSet
 
       @before_compile OCCI.Kind
-
       @parent unquote(parent)
+      @struct %{
+        __struct__: OCCI.Model.Core.Entity,
+        id: nil,
+        kind: __MODULE__,
+        mixins: [],
+        attributes: %{},
+        __node__: %OCCI.Node{}
+      }
+
+      @behaviour Access
+
+      @doc false
+      def __struct__(), do: @struct
 
       def parent, do: @parent
 
@@ -27,6 +39,7 @@ defmodule OCCI.Kind do
           kind: __MODULE__,
           mixins: mixins,
           attributes: %{},
+          __struct__: OCCI.Model.Core.Entity,
 	        __node__: %OCCI.Node{
             model: model
           }
@@ -39,11 +52,27 @@ defmodule OCCI.Kind do
         complete(entity)
       end
 
-      def get(entity, key) when is_atom(key) do
-	      __get__(entity, key, categories(entity))
+      def get(entity, key, default \\ nil) do
+        case fetch(entity, key) do
+          :error -> default
+          {:ok, nil} -> default
+          {:ok, value} -> value
+        end
       end
-      def get(entity, key) do
-	      __get__(entity, :"#{key}", categories(entity))
+
+      @doc """
+      (Implements Access callback)
+
+      Returns:
+      * :error -> key does not exists or value is not set and no default value
+      * {:ok, nil} -> key exists but value is not set (and no default value)
+      * {:ok, value} -> key exists and value is set (or there is a default value)
+      """
+      def fetch(entity, key) when is_atom(key) do
+	      __fetch__(entity, key, categories(entity))
+      end
+      def fetch(entity, key) do
+	      __fetch__(entity, :"#{key}", categories(entity))
       end
 
       def set(entity, key, value) when is_atom(key) do
@@ -53,17 +82,48 @@ defmodule OCCI.Kind do
 	      __set__(entity, :"#{key}", value, categories(entity))
       end
 
+      def get_and_update(entity, key, fun) do
+        cur_val = get(entity, key, nil)
+        case fun.(cur_val) do
+          {cur_val, new_val} ->
+            {cur_val, set(entity, key, new_val)}
+          :pop ->
+            {cur_val, delete(entity, key)}
+        end
+      end
+
+      def pop(entity, key) do
+        cur_val = get(entity, key)
+        {cur_val, delete(entity, key)}
+      end
+
+      def delete(entity, key) when key in [:id, :kind, :mixins, :attributes, :model, :node], do: entity
+      def delete(entity, :owner) do
+        Map.put(entity, :__node__, Map.put(entity.__node__, :owner, nil))
+      end
+      def delete(entity, :serial) do
+        Map.put(entity, :__node__, Map.put(entity.__node__, :serial, nil))
+      end
+      def delete(entity, key) when is_atom(key) do
+        if key in required(entity) do
+          entity
+        else
+          Map.put(entity, :attributes, Map.delete(entity.attributes, key))
+        end
+      end
+      def delete(entity, key), do: delete(entity, :"#{key}")
+
       @doc """
       Return all categories attribute definition must be searched for.
 
       [
-        mixin0
-	      mixin0 deps
-	      mixin1
-	      mixin1 deps
-	      ...
-	      kind
-	      kind parents
+      mixin0
+	    mixin0 deps
+	    mixin1
+	    mixin1 deps
+	    ...
+	    kind
+	    kind parents
       ]
       """
       def categories(entity) do
@@ -89,32 +149,25 @@ defmodule OCCI.Kind do
       defp complete(entity) do
         case missing_attributes(entity) do
           [] -> entity
-          ids ->
-            raise OCCI.Error, {422, "Missing attributes: " <> Enum.join(ids, " ")}
+          ids -> raise OCCI.Error, {422, "Missing attributes: " <> Enum.join(ids, " ")}
         end
       end
 
       defp missing_attributes(entity) do
-        Enum.reduce(categories(entity), [], fn cat, acc0 ->
-          case cat do
-            nil -> acc0
-            mod ->
-              Enum.reduce(mod.__required__(), acc0, fn id, acc1 ->
-                case OCCI.Model.Core.Entity.get(entity, id) do
-                  nil -> [ id | acc1 ]
-                  _ -> acc1
-                end
-              end)
+        Enum.reduce(required(entity), [], fn key, acc ->
+          case OCCI.Model.Core.Entity.fetch(entity, key) do
+            {:ok, nil} -> [ key | acc ]
+            {:ok, _} -> acc
           end
         end)
       end
 
-      defp __get__(entity, key, []), do: raise OCCI.Error, {422, "Undefined attribute: #{key}"}
-      defp __get__(entity, key, [ cat | categories ]) do
+      defp __fetch__(entity, key, []), do: :error
+      defp __fetch__(entity, key, [ cat | categories ]) do
 	      try do
-	        cat.__get__(entity, key)
+	        cat.__fetch_this__(entity, key)
 	      rescue
-          KeyError -> __get__(entity, key, categories)
+          FunctionClauseError -> __fetch__(entity, key, categories)
 	      end
       end
 
@@ -123,7 +176,7 @@ defmodule OCCI.Kind do
 	      try do
 	        cat.__set__(entity, key, value)
 	      rescue
-          KeyError -> __set__(entity, key, value, categories)
+          FunctionClauseError -> __set__(entity, key, value, categories)
 	      end
       end
 
