@@ -177,12 +177,12 @@ defmodule OCCI.Category.Helpers do
 
   defp action_id(name, opts, env) do
     scheme = Keyword.get_lazy(opts, :scheme, fn ->
-      Module.get_attribute(env.module, :scheme)
+      s = Module.get_attribute(env.module, :scheme)
+      t = Module.get_attribute(env.module, :term)
+      "#{s}/#{t}/action"
     end)
-    term = Keyword.get_lazy(opts, :term, fn ->
-      Module.get_attribute(env.module, :term)
-    end)
-    {:"#{scheme}/#{term}#", :"#{name}"}
+    term = Keyword.get(opts, :term, name)
+    {:"#{scheme}", :"#{term}"}
   end
 
   defp fetcher(name, nil, default) do

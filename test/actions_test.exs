@@ -96,6 +96,11 @@ defmodule ActionsTest do
     end
   end
 
+  test "Action categories" do
+    assert match?(:"http://example.org/occi/kind0/action#action0",
+      ActionsModel.Kind0.Actions.Action0.category())
+  end
+
   # test "Launch action" do
   #   res = ActionsModel.Kind0.new(%{ id: "/an_id" })
   #   assert match?("personal reason",
