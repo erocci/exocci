@@ -103,28 +103,22 @@ defmodule OCCI.Category do
     end
   end
 
-  defmacro action({name, _, [_, _]=args}, opts, do_block) do
-    # action with arguments, options and do_block
-    Helpers.__add_action_spec__(__CALLER__, {name, args, opts, do_block})
-  end
-  defmacro action({_, _, args}, _, _do_block) do
-    raise "Action signature expects 2 arguments, found #{length(args)}"
-  end
+  defmacro action({name, _, args}, opts \\ [], do_block \\ []) do
+    do_kw = Keyword.get(opts, :do)
+    do_block = Keyword.get(do_block, :do)
+    body = case {do_kw, do_block} do
+             {nil, nil} -> nil
+             {kw, nil} -> kw
+             {nil, block} -> block
+             {_, _} ->
+               raise "Action '#{name}' defines body as keyword and as 'do' block."
+           end
+    if body do
+      if args == nil or length(args) != 2 do
+        raise "Action '#{name}' defines body, signature expects 2 arguments."
+      end
+    end
 
-  defmacro action({id, _, args}, [do: _]=do_block) do
-    # action without options but with arguments and body: overriding implementation,
-    # can not redefine options
-    {category, name} = case id do
-                         {:., _, [cat]} ->
-                           {_scheme, term} = Helpers.__parse_category__(cat)
-                           {cat, term}
-                         id when is_atom(id) -> id
-                       end
-    opts = [category: category]
-    Helpers.__add_action_spec__(__CALLER__, {name, args, opts, do_block})
-  end
-  defmacro action({name, _, nil}, opts) when is_list(opts) do
-    # action without arguments but options
-    Helpers.__add_action_spec__(__CALLER__, {name, nil, opts, nil})
+    Helpers.__add_action_spec__(__CALLER__, {name, args, opts, body})
   end
 end

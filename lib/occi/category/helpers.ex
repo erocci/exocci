@@ -127,7 +127,7 @@ defmodule OCCI.Category.Helpers do
         do_action = :"__#{category}__"
         ast = quote do
           def unquote(do_action)(unquote_splicing(args)) do
-            unquote(do_block[:do])
+            unquote(do_block)
           end
         end
         Module.eval_quoted(env.module, ast)
