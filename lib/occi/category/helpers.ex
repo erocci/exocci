@@ -34,13 +34,13 @@ defmodule OCCI.Category.Helpers do
 
     # Defined in case category does not defines any attribute
     last_clauses = [{
-      quote do
-        def __fetch_this__(entity, name), do: raise FunctionClauseError
-      end,
-      quote do
-        def __set__(entity, name, _), do: raise FunctionClauseError
-      end
-    }]
+                     quote do
+                       def __fetch_this__(entity, name), do: raise FunctionClauseError
+                     end,
+                     quote do
+                       def __set__(entity, name, _), do: raise FunctionClauseError
+                     end
+                     }]
     clauses = Enum.reduce(specs, last_clauses, fn spec, acc ->
       name = Keyword.get(spec, :name)
       fetcher = fetcher(name, Keyword.get(spec, :get), Keyword.get(spec, :default))
@@ -64,28 +64,21 @@ defmodule OCCI.Category.Helpers do
   end
 
   @doc false
-  def __add_action_spec__(env, {name, _, _, _}=spec) do
-    # Add to related category
-    actions = Module.get_attribute(env.module, :actions)
-    if List.keymember?(actions, name, 0) do
-      raise OCCI.Error, {422, "Action '#{name}' already defined"}
-    else
-      modname = action_module(env, name)
-      Module.put_attribute(env.module, :action_mods, [ {name, modname} | Module.get_attribute(env.module, :action_mods) ])
-      Module.put_attribute(env.module, :actions, [ spec | actions ])
+  def __add_action_spec__(_env, name, opts) do
+    quote do
+      @actions {unquote(name), unquote(opts)}
     end
   end
 
   @doc false
   def __def_actions__(env) do
-    model = Module.get_attribute(env.module, :model)
-    specs = Module.get_attribute(env.module, :actions)
-
-    for {name, args, opts, do_block} <- specs do
+    for {name, opts} <- Module.get_attribute(env.module, :actions) do
       {scheme, term} = action_id(name, opts, env)
       category = :"#{scheme}##{term}"
-      modname = Keyword.get(Module.get_attribute(env.module, :action_mods), name)
+      modname = action_module(env, name)
+
       opts = [
+        {:category, category},
         {:scheme, scheme},
         {:term, term},
         {:model, Module.get_attribute(env.module, :model)},
@@ -94,48 +87,19 @@ defmodule OCCI.Category.Helpers do
         | opts
       ]
 
-      if do_block do
-        case args do
-          [_, _] -> :ok
-          nil -> :ok
-          _ ->
-            # In case do_block is defined, signature must include 2 arguments
-            # and only two: entity + attributes
-            raise OCCI.Error, {422, "Action defines its body, signature must be of arity 2"}
-        end
-      end
-
       # Create action module
       ast = quote do
+        @action_mods unquote(modname)
+
         defmodule unquote(modname) do
           use OCCI.Action, unquote(opts)
         end
       end
       Module.eval_quoted(env.module, ast)
-
-      # Create action function in category
-      ast = quote do
-        def unquote(name)(entity, attrs) do
-          action = unquote(modname).new(attrs)
-          unquote(model).__exec__(action, entity)
-        end
-      end
-      Module.eval_quoted(env.module, ast)
-
-      # Create action implementation function if any
-      if do_block do
-        do_action = :"__#{category}__"
-        ast = quote do
-          def unquote(do_action)(unquote_splicing(args)) do
-            unquote(do_block)
-          end
-        end
-        Module.eval_quoted(env.module, ast)
-      end
     end
 
     ast = quote do
-      def __actions__, do: @action_mods
+      def actions, do: @action_mods
     end
     Module.eval_quoted(env.module, ast)
   end

@@ -13,92 +13,53 @@ defmodule ActionsTest do
         attr0: [type: OCCI.Types.String]
       ] do
 
-      action action0(entity, %{ reason: reason }),
+      action :action0,
 	      title: "An action",
 	      attributes: [
 	        reason: [type: OCCI.Types.String]
-	      ] do
-	      set(entity, :attr0, reason)
-      end
+	      ]
 
-      action action1
+      action :action1
 
-      action action2,
+      action :action2,
         title: "An action with options"
     end
 
-    # mixin Mixin0,
-    #   title: "A mixin"
-    #   do
-    #   action stop(entity, _attrs) do
-    #     OCCI.Model.Core.Entity.set(entity, :status, :schrodinger)
-    #   end
-    # end
+    mixin Mixin0,
+      title: "A mixin"
+      do
+      action :action0
+    end
   end
 
-  # defmodule ActionsModel2 do
-  #   use OCCI.Model,
-  #     scheme: "http://example.org/occi2#"
+  defmodule ActionsModel2 do
+    use OCCI.Model,
+      scheme: "http://example.org/occi2#"
 
-  #   extends ActionsModel
+    extends ActionsModel
+  end
 
-  #   # action :'http://example.org/occi/compute/action#stop'.(entity, %{ method: method }) do
-  #   #   OCCI.Model.Core.Entity.set(entity, :killed, true)
-  #   # end
-  # end
+  test "Action definition" do
+    assert match?([
+      "An action",
+      "Action http://example.org/occi/kind0/action#action1",
+      "An action with options"
+    ],
+      ActionsModel.Kind0.actions() |> Enum.map(&(&1.title())))
 
-  test "Action syntax" do
-    assert_raise RuntimeError, "Action 'action0' defines body, signature expects 2 arguments.", fn ->
-      defmodule TestModel0 do
-        use OCCI.Model,
-          scheme: "http://example.org/model0"
-
-        kind Kind1,
-          parent: OCCI.Model.Core.Resource do
-          action action0,
-            title: "A title",
-            do: :ok
-        end
-      end
-    end
-
-    assert_raise RuntimeError, "Action 'action0' defines body, signature expects 2 arguments.", fn ->
-      defmodule TestModel1 do
-        use OCCI.Model,
-          scheme: "http://example.org/model0"
-
-        kind Kind2,
-          parent: OCCI.Model.Core.Resource do
-          action action0,
-            title: "A title"
-            do
-            :ok
-          end
-        end
-      end
-    end
-
-    assert_raise RuntimeError, "Action 'action0' defines body as keyword and as 'do' block.", fn ->
-      defmodule TestModel2 do
-        use OCCI.Model,
-          scheme: "http://example.org/model0"
-
-        kind Kind2,
-          parent: OCCI.Model.Core.Resource do
-          action action0,
-            title: "A title",
-            do: :ok
-            do
-            :ok
-          end
-        end
-      end
-    end
+    assert match?([
+      "Action http://example.org/occi/mixin0/action#action0"
+    ],
+      ActionsModel.Mixin0.actions() |> Enum.map(&(&1.title())))
   end
 
   test "Action categories" do
-    assert match?(:"http://example.org/occi/kind0/action#action0",
-      ActionsModel.Kind0.Actions.Action0.category())
+    assert match?([
+      :"http://example.org/occi/kind0/action#action0",
+      :"http://example.org/occi/kind0/action#action1",
+      :"http://example.org/occi/kind0/action#action2"
+    ],
+      ActionsModel.Kind0.actions() |> Enum.map(&(&1.category())))
   end
 
   # test "Launch action" do

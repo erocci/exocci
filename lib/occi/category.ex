@@ -5,8 +5,6 @@ defmodule OCCI.Category do
   Not intended to be used directly by user, but through `OCCI.Kind` / `OCCI.Mixin` modules
   or `OCCI.Model.kind` and `OCCI.Model.Mixin` macros.
   """
-
-  alias OCCI.Category.Helpers
   alias OCCI.Attribute
 
   @doc """
@@ -103,22 +101,9 @@ defmodule OCCI.Category do
     end
   end
 
-  defmacro action({name, _, args}, opts \\ [], do_block \\ []) do
-    do_kw = Keyword.get(opts, :do)
-    do_block = Keyword.get(do_block, :do)
-    body = case {do_kw, do_block} do
-             {nil, nil} -> nil
-             {kw, nil} -> kw
-             {nil, block} -> block
-             {_, _} ->
-               raise "Action '#{name}' defines body as keyword and as 'do' block."
-           end
-    if body do
-      if args == nil or length(args) != 2 do
-        raise "Action '#{name}' defines body, signature expects 2 arguments."
-      end
+  defmacro action(name, opts \\ []) do
+    quote do
+      @actions {unquote(name), unquote(opts)}
     end
-
-    Helpers.__add_action_spec__(__CALLER__, {name, args, opts, body})
   end
 end

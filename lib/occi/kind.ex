@@ -3,12 +3,12 @@ defmodule OCCI.Kind do
     parent = Keyword.get(opts, :parent)
     opts = [ {:type, :kind} | opts ]
 
-    Module.put_attribute(__CALLER__.module, :actions, [])
-    Module.put_attribute(__CALLER__.module, :action_mods, [])
-
     quote do
       use OCCI.Category, unquote(opts)
       alias OCCI.OrdSet
+
+      Module.register_attribute(__MODULE__, :actions, accumulate: true)
+      Module.register_attribute(__MODULE__, :action_mods, accumulate: true)
 
       @before_compile OCCI.Kind
       @parent unquote(parent)

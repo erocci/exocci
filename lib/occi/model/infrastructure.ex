@@ -42,30 +42,28 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ] do
-    action start,
+    action :start,
       title: "Start the instance"
 
-    action stop(vm, _attrs),
+    action :stop,
       title: "Stop the instance",
       attributes: [
         method: [type: [:graceful, :acpioff, :poweroff]]
-      ] do
-      Core.Entity.set(vm, "occi.compute.state", :inactive)
-    end
+      ]
 
-    action restart,
+    action :restart,
       title: "Restart the instance",
       attributes: [
         method: [type: [:graceful, :warm, :cold]]
       ]
 
-    action suspend,
+    action :suspend,
       title: "Suspend the instance",
       attributes: [
         method: [type: [:hibernate, :suspend]]
       ]
 
-    action save,
+    action :save,
       title: "Creates a snapshot of the instance",
       attributes: [
         method: [type: [:host, :deferred]],
@@ -140,10 +138,10 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ] do
-    action up,
+    action :up,
       title: "Bring the instance up"
 
-    action down,
+    action :down,
        title: "Bring the instance down"
   end
 
