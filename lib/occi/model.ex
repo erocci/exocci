@@ -147,7 +147,7 @@ defmodule OCCI.Model do
 	      name = :"#{name}"
 	      Map.get_lazy(@kinds, name, fn ->
 	        Map.get_lazy(@mixins, name, fn ->
-	          Map.get_lazy(unquote(user_mixins_mod).mixins(), name, fn ->
+	          Map.get_lazy(unquote(user_mixins_mod).__mixins__(), name, fn ->
 	            Enum.find_value(@imports, &(&1.module(name)))
 	          end)
 	        end)
