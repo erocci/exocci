@@ -90,7 +90,7 @@ defmodule OCCI.Model do
       """
       def actions(categories) do
         Enum.reduce(categories, OrdSet.new(), fn category, acc ->
-          OrdSet.merge(acc, category.__actions__())
+          OrdSet.merge(acc, category.actions())
         end)
       end
 

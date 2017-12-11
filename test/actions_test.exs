@@ -13,11 +13,12 @@ defmodule ActionsTest do
         attr0: [type: OCCI.Types.String]
       ] do
 
-      action :action0,
-	      title: "An action",
-	      attributes: [
-	        reason: [type: OCCI.Types.String]
-	      ]
+      action title: "An action", attributes: [
+	      reason: [type: OCCI.Types.String]
+	    ]
+      def action0(entity, %{ reason: reason}) do
+        OCCI.Entity.set(entity, :attr0, reason)
+      end
 
       action :action1
 
@@ -41,9 +42,9 @@ defmodule ActionsTest do
 
   test "Action definition" do
     assert match?([
-      "An action",
+      "An action with options",
       "Action http://example.org/occi/kind0/action#action1",
-      "An action with options"
+      "An action"
     ],
       ActionsModel.Kind0.actions() |> Enum.map(&(&1.title())))
 
@@ -55,17 +56,16 @@ defmodule ActionsTest do
 
   test "Action categories" do
     assert match?([
-      :"http://example.org/occi/kind0/action#action0",
+      :"http://example.org/occi/kind0/action#action2",
       :"http://example.org/occi/kind0/action#action1",
-      :"http://example.org/occi/kind0/action#action2"
+      :"http://example.org/occi/kind0/action#action0"
     ],
       ActionsModel.Kind0.actions() |> Enum.map(&(&1.category())))
   end
 
   # test "Launch action" do
-  #   res = ActionsModel.Kind0.new(%{ id: "/an_id" })
-  #   assert match?("personal reason",
-  #     Core.Entity.get(ActionsModel.Compute.action0(res, %{ reason: "personal reason" }), :attr0))
+  #   res = OCCI.Entity.call(ActionsModel.Kind0.new(%{ id: "/an_id" }), :action0, %{ reason: "whynot" })
+  #   assert match?("whynot", Core.Entity.get(res, :attr0))
   # end
 
   # test "Invalid action argument" do

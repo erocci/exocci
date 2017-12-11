@@ -64,15 +64,8 @@ defmodule OCCI.Category.Helpers do
   end
 
   @doc false
-  def __add_action_spec__(_env, name, opts) do
-    quote do
-      @actions {unquote(name), unquote(opts)}
-    end
-  end
-
-  @doc false
   def __def_actions__(env) do
-    for {name, opts} <- Module.get_attribute(env.module, :actions) do
+    specs = Enum.reduce(Module.get_attribute(env.module, :actions), [], fn {name, opts}, acc ->
       {scheme, term} = action_id(name, opts, env)
       category = :"#{scheme}##{term}"
       modname = action_module(env, name)
@@ -87,7 +80,22 @@ defmodule OCCI.Category.Helpers do
         | opts
       ]
 
-      # Create action module
+      [ {name, category, modname, opts} | acc ]
+    end)
+
+    specs |> Enum.each(fn {name, category, modname, _opts} ->
+      ast = quote do
+        def action(unquote(category)), do: unquote(modname)
+        def action(unquote(name)), do: unquote(modname)
+      end
+      Module.eval_quoted(env, ast)
+    end)
+    ast = quote do
+      def action(_), do: nil
+    end
+    Module.eval_quoted(env, ast)
+
+    specs |> Enum.each(fn {_name, _category, modname, opts} ->
       ast = quote do
         @action_mods unquote(modname)
 
@@ -95,8 +103,8 @@ defmodule OCCI.Category.Helpers do
           use OCCI.Action, unquote(opts)
         end
       end
-      Module.eval_quoted(env.module, ast)
-    end
+      Module.eval_quoted(env, ast)
+    end)
 
     ast = quote do
       def actions, do: @action_mods

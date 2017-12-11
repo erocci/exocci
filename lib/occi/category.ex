@@ -41,7 +41,10 @@ defmodule OCCI.Category do
 
     quote do
       require OCCI.Category
+
+      import Kernel, except: [def: 2]
       import OCCI.Category
+
       alias OCCI.Attribute
 
       @model unquote(model)
@@ -101,9 +104,32 @@ defmodule OCCI.Category do
     end
   end
 
-  defmacro action(name, opts \\ []) do
+  defmacro action(name) when is_atom(name) do
+    quote do
+      @actions {unquote(name), []}
+    end
+  end
+  defmacro action(opts) when is_list(opts) do
+    Module.put_attribute(__CALLER__.module, :action_decorator, opts)
+  end
+  defmacro action(name, opts) do
     quote do
       @actions {unquote(name), unquote(opts)}
+    end
+  end
+
+  defmacro def({name, _, _}=fn_call_ast, fn_opts_ast \\ nil) do
+    case Module.get_attribute(__CALLER__.module, :action_decorator) do
+      nil ->
+        quote do
+          Kernel.def(unquote(fn_call_ast), unquote(fn_opts_ast))
+        end
+      opts ->
+        Module.delete_attribute(__CALLER__.module, :action_decorator)
+        quote do
+          @actions {unquote(name), unquote(opts)}
+          Kernel.def(unquote(fn_call_ast), unquote(fn_opts_ast))
+        end
     end
   end
 end

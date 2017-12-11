@@ -52,6 +52,9 @@ defmodule OCCI.Kind do
         complete(entity)
       end
 
+      @doc """
+      Get the attribute from entity, returning default value if not present
+      """
       def get(entity, key, default \\ nil) do
         case fetch(entity, key) do
           :error -> default
