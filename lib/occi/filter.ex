@@ -49,7 +49,7 @@ defmodule OCCI.Filter do
   defp match_categories(_, []), do: false
   defp match_categories(val, [ cat | rest ]) do
     res = try do
-            Module.safe_concat(cat) == Module.safe_concat(val)
+            Module.safe_concat([cat]) == Module.safe_concat([val])
           rescue ArgumentError ->
               cat.category() == :"#{val}"
           end
