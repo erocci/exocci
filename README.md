@@ -1,8 +1,17 @@
 # Exocci
 
-## Installation
+[![Hex.pm](https://img.shields.io/hexpm/v/exocci.svg)](https://hex.pm/packages/exocci)
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+`exocci` implements
+the [OCCI meta-model](http://occi-wg.org/about/specification/)
+([Core](http://ogf.org/documents/GFD.221.pdf),
+[Infrastructure](http://ogf.org/documents/GFD.224.pdf)) with a specific DSL.
+
+`OCCI.Model.Infrastructure` module is an example of model defined with the DSL.
+
+See the [generated documentation](http://hexdocs.pm/exocci) for more detailed explanations.
+
+## Installation
 
   1. Add `exocci` to your list of dependencies in `mix.exs`:
 
