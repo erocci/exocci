@@ -2,6 +2,11 @@ defmodule OCCI.Store do
   alias OCCI.Model.Core.Entity
   require Logger
 
+  @doc false
+  def child_spec(args) do
+    %{ id: __MODULE__, start: {__MODULE__, :start_link, [args]}}
+  end
+
   @doc """
   Start Store with given backends
   """
