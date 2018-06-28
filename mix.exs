@@ -6,10 +6,12 @@ defmodule OCCI.Mixfile do
       app: :occi,
       version: "0.1.1",
       elixir: "~> 1.3",
-      build_embedded: Mix.env == :prod,
-      start_permanent: Mix.env == :prod,
+      build_embedded: Mix.env() == :prod,
+      start_permanent: Mix.env() == :prod,
+      aliases: [
+        compile: ["format", "compile", "credo"]
+      ],
       deps: deps(),
-
       name: "exocci",
       description: description(),
       package: package(),
@@ -18,7 +20,7 @@ defmodule OCCI.Mixfile do
       docs: [
         main: "OCCI",
         logo: "_doc/erocci-logo-only.png",
-        extras: [ "_doc/manual.md" ]
+        extras: ["_doc/manual.md"]
       ]
     ]
   end
@@ -52,6 +54,7 @@ defmodule OCCI.Mixfile do
 
   defp deps do
     [
+      {:credo, "~> 0.9", only: [:dev, :test], runtime: false},
       {:poison, "~> 3.1"},
       {:uuid, "~> 1.1"},
       {:earmark, "~> 1.2", only: :dev},

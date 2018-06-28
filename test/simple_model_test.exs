@@ -7,14 +7,18 @@ defmodule SimpleModelTest do
 
     alias OCCI.Model.Core
 
-    kind MyKind0,
+    kind(
+      MyKind0,
       parent: Core.Resource
+    )
 
-    kind MyKindLink0,
+    kind(
+      MyKindLink0,
       parent: Core.Link,
       title: "My link category"
+    )
 
-    mixin MyMixin0
+    mixin(MyMixin0)
   end
 
   test "Creates model" do
@@ -26,7 +30,11 @@ defmodule SimpleModelTest do
   end
 
   test "User mixins" do
-    assert match?(SimpleModelTest.SimpleModel.MyTag0, SimpleModel.add_mixin(MyTag0, "http://example.org/occi#mytag0"))
+    assert match?(
+             SimpleModelTest.SimpleModel.MyTag0,
+             SimpleModel.add_mixin(MyTag0, "http://example.org/occi#mytag0")
+           )
+
     assert SimpleModel.mixin?(SimpleModelTest.SimpleModel.MyTag0)
     assert length(SimpleModel.mixins()) == 2
 
@@ -35,7 +43,7 @@ defmodule SimpleModelTest do
     assert length(SimpleModel.mixins()) == 1
 
     assert match?(:error, SimpleModel.del_mixin(InvalidMixin))
-end
+  end
 
   test "Creates Kind module" do
     assert match?(:"http://example.org/occi/simple#", SimpleModel.MyKind0.scheme())

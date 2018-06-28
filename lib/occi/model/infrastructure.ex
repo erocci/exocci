@@ -42,36 +42,47 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ] do
-    action :start,
+    action(
+      :start,
       title: "Start the instance"
+    )
 
-    action :stop,
+    action(
+      :stop,
       title: "Stop the instance",
       attributes: [
         method: [type: [:graceful, :acpioff, :poweroff]]
       ]
+    )
 
-    action :restart,
+    action(
+      :restart,
       title: "Restart the instance",
       attributes: [
         method: [type: [:graceful, :warm, :cold]]
       ]
+    )
 
-    action :suspend,
+    action(
+      :suspend,
       title: "Suspend the instance",
       attributes: [
         method: [type: [:hibernate, :suspend]]
       ]
+    )
 
-    action :save,
+    action(
+      :save,
       title: "Creates a snapshot of the instance",
       attributes: [
         method: [type: [:host, :deferred]],
         name: [type: OCCI.Types.String]
       ]
+    )
   end
 
-  kind Storage,
+  kind(
+    Storage,
     parent: Core.Resource,
     attributes: [
       "occi.storage.size": [
@@ -90,8 +101,10 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ]
+  )
 
-  kind StorageLink,
+  kind(
+    StorageLink,
     parent: Core.Link,
     attributes: [
       "occi.storagelink.deviceid": [
@@ -114,6 +127,7 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ]
+  )
 
   kind Network,
     parent: Core.Resource,
@@ -138,14 +152,19 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ] do
-    action :up,
+    action(
+      :up,
       title: "Bring the instance up"
+    )
 
-    action :down,
-       title: "Bring the instance down"
+    action(
+      :down,
+      title: "Bring the instance down"
+    )
   end
 
-  kind NetworkInterface,
+  kind(
+    NetworkInterface,
     parent: Core.Link,
     attributes: [
       "occi.networkinterface.interface": [
@@ -170,10 +189,12 @@ defmodule OCCI.Model.Infrastructure do
         description: "Human-readable explanation of the current instance state"
       ]
     ]
+  )
 
-  mixin IPNetwork,
+  mixin(
+    IPNetwork,
     scheme: "http://schemas.ogf.org/occi/infrastructure/network",
-    applies: [ "http://schemas.ogf.org/occi/infrastructure#network" ],
+    applies: ["http://schemas.ogf.org/occi/infrastructure#network"],
     attributes: [
       "occi.network.address": [
         type: Types.CIDR,
@@ -191,10 +212,12 @@ defmodule OCCI.Model.Infrastructure do
         description: "IP allocation type"
       ]
     ]
+  )
 
-  mixin IPNetworkInterface,
+  mixin(
+    IPNetworkInterface,
     scheme: "http://schemas.ogf.org/occi/infrastructure/networkinterface",
-    applies: [ "http://schemas.ogf.org/occi/infrastructure#networkinterface" ],
+    applies: ["http://schemas.ogf.org/occi/infrastructure#networkinterface"],
     attributes: [
       "occi.networkinterface.address": [
         type: Types.CIDR,
@@ -212,17 +235,23 @@ defmodule OCCI.Model.Infrastructure do
         description: "Address mechanism"
       ]
     ]
+  )
 
-  mixin OsTpl,
+  mixin(
+    OsTpl,
     term: "os_tpl"
+  )
 
-  mixin ResourceTpl,
+  mixin(
+    ResourceTpl,
     term: "resource_tpl"
+  )
 
-  mixin SShKey,
+  mixin(
+    SShKey,
     scheme: "http://schemas.ogf.org/occi/infrastructure/credentials",
     term: "ssh_key",
-    applies: [ "http://schemas.ogf.org/occi/infrastructure#compute" ],
+    applies: ["http://schemas.ogf.org/occi/infrastructure#compute"],
     attributes: [
       "occi.credentials.ssh.publickey": [
         type: Types.String,
@@ -230,18 +259,22 @@ defmodule OCCI.Model.Infrastructure do
         description: "The content of the public key file to be injected into the compute resource"
       ]
     ]
+  )
 
-  mixin UserData,
+  mixin(
+    UserData,
     scheme: "http://schemas.ogf.org/occi/infrastructure/compute",
     term: "user_data",
-    applies: [ "http://schemas.ogf.org/occi/infrastructure#compute" ],
+    applies: ["http://schemas.ogf.org/occi/infrastructure#compute"],
     attributes: [
       "occi.compute.userdata": [
         type: Types.String,
         required: true,
         mutable: false,
-        description: "Contextualization data (e.g.: script, executable) that the client supplies once
+        description:
+          "Contextualization data (e.g.: script, executable) that the client supplies once
         and only once. It cannot be updated."
       ]
     ]
+  )
 end

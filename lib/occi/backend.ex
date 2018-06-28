@@ -12,24 +12,29 @@ defmodule OCCI.Backend do
   @type t :: %OCCI.Backend{}
 
   @callback init(args :: any) ::
-  {:ok, state} |
-  {:stop, reason :: any} when state: any
+              {:ok, state}
+              | {:stop, reason :: any}
+            when state: any
 
-  @callback fetch(OCCI.Node.location, state) ::
-  {:reply, OCCI.Model.Core.Entity.t | nil, new_state} |
-  {:stop, reason :: term, new_state} when state: term, new_state: term
+  @callback fetch(OCCI.Node.location(), state) ::
+              {:reply, OCCI.Model.Core.Entity.t() | nil, new_state}
+              | {:stop, reason :: term, new_state}
+            when state: term, new_state: term
 
-  @callback lookup(OCCI.Filter.t, state) ::
-  {:reply, [OCCI.Model.Core.Entity.t], new_state} |
-  {:stop, reason :: term, new_state} when state: term, new_state: term
+  @callback lookup(OCCI.Filter.t(), state) ::
+              {:reply, [OCCI.Model.Core.Entity.t()], new_state}
+              | {:stop, reason :: term, new_state}
+            when state: term, new_state: term
 
-  @callback store(OCCI.Model.Core.Entity.t, state) ::
-  {:reply, OCCI.Model.Core.Entity.t, new_state} |
-  {:stop, reason :: term, new_state} when state: term, new_state: term
+  @callback store(OCCI.Model.Core.Entity.t(), state) ::
+              {:reply, OCCI.Model.Core.Entity.t(), new_state}
+              | {:stop, reason :: term, new_state}
+            when state: term, new_state: term
 
-  @callback delete(OCCI.Node.location, state) ::
-  {:reply, :ok | :error, new_state} |
-  {:stop, reason :: term, new_state} when state: term, new_state: term
+  @callback delete(OCCI.Node.location(), state) ::
+              {:reply, :ok | :error, new_state}
+              | {:stop, reason :: term, new_state}
+            when state: term, new_state: term
 
   @callback terminate(reason :: :atom, state) :: :ok when state: term
 
@@ -48,7 +53,7 @@ defmodule OCCI.Backend do
         :ok
       end
 
-      defoverridable [init: 1, terminate: 2]
+      defoverridable init: 1, terminate: 2
     end
   end
 end

@@ -11,7 +11,7 @@ defmodule OCCI.OrdSet do
 
   @doc false
   def add(set, item) do
-    if item in set, do: set, else: [ item | set ]
+    if item in set, do: set, else: [item | set]
   end
 
   @doc false
@@ -21,6 +21,6 @@ defmodule OCCI.OrdSet do
   Add items from list to the set
   """
   def merge(set, list) do
-    Enum.reduce(list, set, &(add(&2, &1)))
+    Enum.reduce(list, set, &add(&2, &1))
   end
 end

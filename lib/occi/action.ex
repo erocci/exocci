@@ -3,7 +3,7 @@ defmodule OCCI.Action do
     name = Keyword.get(opts, :name)
     related = Keyword.get(opts, :related)
     related_mod = Keyword.get(opts, :related_mod)
-    opts = [ {:type, :action} | opts ]
+    opts = [{:type, :action} | opts]
 
     quote do
       use OCCI.Category, unquote(opts)
@@ -20,18 +20,24 @@ defmodule OCCI.Action do
           related_mod: unquote(related_mod),
           attributes: %{}
         }
-        action = Enum.reduce(attributes, action, fn {key, value}, acc ->
-          Action.set(acc, key, value)
-        end)
 
-        missing = Enum.reduce(__required__(), [], fn id, acc ->
-          case Action.get(action, id) do
-            nil -> [ id | acc ]
-            _ -> acc
-          end
-        end)
+        action =
+          Enum.reduce(attributes, action, fn {key, value}, acc ->
+            Action.set(acc, key, value)
+          end)
+
+        missing =
+          Enum.reduce(__required__(), [], fn id, acc ->
+            case Action.get(action, id) do
+              nil -> [id | acc]
+              _ -> acc
+            end
+          end)
+
         case missing do
-          [] -> action
+          [] ->
+            action
+
           ids ->
             names = Enum.join(ids, " ")
             raise OCCI.Error, {422, "Missing attributes: #{names}"}
@@ -54,28 +60,30 @@ defmodule OCCI.Action do
   @doc """
   Returns action category id
   """
-  def id(%{ id: id }), do: id
+  def id(%{id: id}), do: id
 
   @doc """
   Returns action related category
   """
-  def related(%{ related: related }), do: related
+  def related(%{related: related}), do: related
 
   @doc """
   Return casted attributes, with default values for required ones, if necessary
   """
-  def attributes(%{ mod: mod, attributes: attrs }) do
-    Enum.reduce(mod.__required__(), attrs, &(Map.put_new(&2, &1, Map.get(mod.__defaults__(), &1))))
+  def attributes(%{mod: mod, attributes: attrs}) do
+    Enum.reduce(mod.__required__(), attrs, &Map.put_new(&2, &1, Map.get(mod.__defaults__(), &1)))
   end
 
   @doc """
   Get an attribute value, or its default value if not set
   """
-  def get(%{ mod: mod }=action, key) do
+  def get(%{mod: mod} = action, key) do
     try do
       mod.__get__(action, key)
-    rescue FunctionClauseError ->
+    rescue
+      FunctionClauseError ->
         raise OCCI.Error, {422, "Undefined attribute: #{key}"}
+
       UndefinedFunctionError ->
         raise OCCI.Error, {422, "Undefined attribute: #{key}"}
     end
@@ -84,16 +92,18 @@ defmodule OCCI.Action do
   @doc """
   Set an action attribute
   """
-  def set(%{ mod: mod }=action, key, value) do
+  def set(%{mod: mod} = action, key, value) do
     try do
       mod.__set__(action, key, value)
-    rescue FunctionClauseError ->
+    rescue
+      FunctionClauseError ->
         raise OCCI.Error, {422, "Undefined attribute: #{key}"}
+
       UndefinedFunctionError ->
         raise OCCI.Error, {422, "Undefined attribute: #{key}"}
     end
   end
 
   @doc false
-  def __related_mod__(%{ related_mod: mod }), do: mod
+  def __related_mod__(%{related_mod: mod}), do: mod
 end

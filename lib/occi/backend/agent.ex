@@ -7,12 +7,15 @@ defmodule OCCI.Backend.Agent do
 
   @doc false
   def init([src]) do
-    path = case src do
-             {:priv_dir, path} ->
-               Path.join(:code.priv_dir(:mingus), path)
-             p when is_binary(p) ->
-               p
-           end
+    path =
+      case src do
+        {:priv_dir, path} ->
+          Path.join(:code.priv_dir(:mingus), path)
+
+        p when is_binary(p) ->
+          p
+      end
+
     model = Application.get_env(:occi, :model, OCCI.Model.Core)
     data = File.read!(path) |> Poison.decode!(keys: :atoms) |> parse(model)
     {:ok, data}
@@ -31,9 +34,11 @@ defmodule OCCI.Backend.Agent do
 
   @doc false
   def lookup(filter, state) do
-    ret = state |>
-      Enum.filter(fn ({_, entity}) -> OCCI.Filter.match(entity, filter) end) |>
-      Enum.map(&(elem(&1, 1)))
+    ret =
+      state
+      |> Enum.filter(fn {_, entity} -> OCCI.Filter.match(entity, filter) end)
+      |> Enum.map(&elem(&1, 1))
+
     {:reply, ret, state}
   end
 
@@ -47,9 +52,9 @@ defmodule OCCI.Backend.Agent do
   ### Private
   ###
   defp parse(data, model) do
-    Enum.reduce(data, %{}, fn (item, store) ->
-      OCCI.Rendering.JSON.parse(model, item) |>
-      (&(Map.put(store, Entity.location(&1), &1))).()
+    Enum.reduce(data, %{}, fn item, store ->
+      OCCI.Rendering.JSON.parse(model, item)
+      |> (&Map.put(store, Entity.location(&1), &1)).()
     end)
   end
 end

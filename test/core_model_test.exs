@@ -9,11 +9,13 @@ defmodule CoreModelTest do
   end
 
   test "Check resource instanciation" do
-    assert match?(%{ kind: OCCI.Model.Core.Resource }, OCCI.Model.Core.Resource.new(%{ id: "an id"}))
+    assert match?(%{kind: OCCI.Model.Core.Resource}, OCCI.Model.Core.Resource.new(%{id: "an id"}))
   end
 
   test "Check link instanciation" do
-    assert match?(%{ kind: OCCI.Model.Core.Link },
-      OCCI.Model.Core.Link.new(%{ id: "an id", source: "/source", target: "/target" }))
+    assert match?(
+             %{kind: OCCI.Model.Core.Link},
+             OCCI.Model.Core.Link.new(%{id: "an id", source: "/source", target: "/target"})
+           )
   end
 end

@@ -1,7 +1,7 @@
 defmodule OCCI.Kind do
   defmacro __using__(opts) do
     parent = Keyword.get(opts, :parent)
-    opts = [ {:type, :kind} | opts ]
+    opts = [{:type, :kind} | opts]
 
     quote do
       use OCCI.Category, unquote(opts)
@@ -40,15 +40,18 @@ defmodule OCCI.Kind do
           mixins: mixins,
           attributes: %{},
           __struct__: OCCI.Model.Core.Entity,
-	        __node__: %OCCI.Node{
+          __node__: %OCCI.Node{
             model: model
           }
         }
-	      entity = Enum.reduce(attributes, entity, fn
-          {:kind, _}, acc -> acc
-          {:mixins, _}, acc -> acc
-          {key, value}, acc -> set(acc, key, value)
-	      end)
+
+        entity =
+          Enum.reduce(attributes, entity, fn
+            {:kind, _}, acc -> acc
+            {:mixins, _}, acc -> acc
+            {key, value}, acc -> set(acc, key, value)
+          end)
+
         complete(entity)
       end
 
@@ -72,24 +75,28 @@ defmodule OCCI.Kind do
       * {:ok, value} -> key exists and value is set (or there is a default value)
       """
       def fetch(entity, key) when is_atom(key) do
-	      __fetch__(entity, key, categories(entity))
+        __fetch__(entity, key, categories(entity))
       end
+
       def fetch(entity, key) do
-	      __fetch__(entity, :"#{key}", categories(entity))
+        __fetch__(entity, :"#{key}", categories(entity))
       end
 
       def set(entity, key, value) when is_atom(key) do
-	      __set__(entity, key, value, categories(entity))
+        __set__(entity, key, value, categories(entity))
       end
+
       def set(entity, key, value) do
-	      __set__(entity, :"#{key}", value, categories(entity))
+        __set__(entity, :"#{key}", value, categories(entity))
       end
 
       def get_and_update(entity, key, fun) do
         cur_val = get(entity, key, nil)
+
         case fun.(cur_val) do
           {cur_val, new_val} ->
             {cur_val, set(entity, key, new_val)}
+
           :pop ->
             {cur_val, delete(entity, key)}
         end
@@ -100,13 +107,17 @@ defmodule OCCI.Kind do
         {cur_val, delete(entity, key)}
       end
 
-      def delete(entity, key) when key in [:id, :kind, :mixins, :attributes, :model, :node], do: entity
+      def delete(entity, key) when key in [:id, :kind, :mixins, :attributes, :model, :node],
+        do: entity
+
       def delete(entity, :owner) do
         Map.put(entity, :__node__, Map.put(entity.__node__, :owner, nil))
       end
+
       def delete(entity, :serial) do
         Map.put(entity, :__node__, Map.put(entity.__node__, :serial, nil))
       end
+
       def delete(entity, key) when is_atom(key) do
         if key in required(entity) do
           entity
@@ -114,6 +125,7 @@ defmodule OCCI.Kind do
           Map.put(entity, :attributes, Map.delete(entity.attributes, key))
         end
       end
+
       def delete(entity, key), do: delete(entity, :"#{key}")
 
       @doc """
@@ -121,28 +133,30 @@ defmodule OCCI.Kind do
 
       [
         mixin0
-	      mixin0 deps
-	      mixin1
-	      mixin1 deps
-	      ...
-	      kind
-	      kind parents
+       mixin0 deps
+       mixin1
+       mixin1 deps
+       ...
+       kind
+       kind parents
       ]
       """
       def categories(entity) do
-	      depends = Enum.reduce(Map.get(entity, :mixins, []), OrdSet.new(), fn mixin, acc ->
-          OrdSet.merge(acc, [ mixin | mixin.depends!() ])
-	      end)
-	      kind = Map.get(entity, :kind)
-	      parents = kind.parent!()
-	      Enum.reverse(depends) ++ [ kind | parents ]
+        depends =
+          Enum.reduce(Map.get(entity, :mixins, []), OrdSet.new(), fn mixin, acc ->
+            OrdSet.merge(acc, [mixin | mixin.depends!()])
+          end)
+
+        kind = Map.get(entity, :kind)
+        parents = kind.parent!()
+        Enum.reverse(depends) ++ [kind | parents]
       end
 
       @doc """
       Return required attribute keys
       """
       def required(entity) do
-        Enum.reduce(categories(entity), OrdSet.new(), &(OrdSet.merge(&2, &1.__required__())))
+        Enum.reduce(categories(entity), OrdSet.new(), &OrdSet.merge(&2, &1.__required__()))
       end
 
       ###
@@ -159,33 +173,37 @@ defmodule OCCI.Kind do
       defp missing_attributes(entity) do
         Enum.reduce(required(entity), [], fn key, acc ->
           case OCCI.Model.Core.Entity.fetch(entity, key) do
-            {:ok, nil} -> [ key | acc ]
+            {:ok, nil} -> [key | acc]
             {:ok, _} -> acc
           end
         end)
       end
 
       defp __fetch__(entity, key, []), do: :error
-      defp __fetch__(entity, key, [ cat | categories ]) do
-	      try do
-	        cat.__fetch_this__(entity, key)
-	      rescue
+
+      defp __fetch__(entity, key, [cat | categories]) do
+        try do
+          cat.__fetch_this__(entity, key)
+        rescue
           FunctionClauseError -> __fetch__(entity, key, categories)
-	      end
+        end
       end
 
-      defp __set__(entity, key, value, []), do: raise OCCI.Error, {422, "Undefined attribute: #{key}"}
-      defp __set__(entity, key, value, [ cat | categories ]) do
-	      try do
-	        cat.__set__(entity, key, value)
-	      rescue
+      defp __set__(entity, key, value, []),
+        do: raise(OCCI.Error, {422, "Undefined attribute: #{key}"})
+
+      defp __set__(entity, key, value, [cat | categories]) do
+        try do
+          cat.__set__(entity, key, value)
+        rescue
           FunctionClauseError -> __set__(entity, key, value, categories)
-	      end
+        end
       end
 
       defp parent!(nil), do: []
+
       defp parent!(parent) do
-	      OrdSet.add(parent.parent!(), parent)
+        OrdSet.add(parent.parent!(), parent)
       end
     end
   end

@@ -13,35 +13,41 @@ defmodule OCCI.Category.Helpers do
 
     _ = add_requires(specs, env)
 
-    defaults = Enum.reduce(specs, %{}, fn spec, acc ->
-      case Keyword.get(spec, :default) do
-        nil -> acc
-        v -> Map.put(acc, Keyword.get(spec, :name), v)
-      end
-    end)
+    defaults =
+      Enum.reduce(specs, %{}, fn spec, acc ->
+        case Keyword.get(spec, :default) do
+          nil -> acc
+          v -> Map.put(acc, Keyword.get(spec, :name), v)
+        end
+      end)
+
     Module.put_attribute(env.module, :defaults, defaults)
 
     # Defined in case category does not defines any attribute
-    last_clauses = [{
-                     quote do
-                       def __fetch_this__(entity, name), do: raise FunctionClauseError
-                     end,
-                     quote do
-                       def __set__(entity, name, _), do: raise FunctionClauseError
-                     end
-                     }]
-    clauses = Enum.reduce(specs, last_clauses, fn spec, acc ->
-      name = Keyword.get(spec, :name)
-      fetcher = fetcher(name, Keyword.get(spec, :get), Keyword.get(spec, :default))
-      setter = setter(name, Keyword.get(spec, :set), Keyword.get(spec, :check))
+    last_clauses = [
+      {
+        quote do
+          def __fetch_this__(entity, name), do: raise(FunctionClauseError)
+        end,
+        quote do
+          def __set__(entity, name, _), do: raise(FunctionClauseError)
+        end
+      }
+    ]
 
-      acc = [ {fetcher, setter} | acc ]
+    clauses =
+      Enum.reduce(specs, last_clauses, fn spec, acc ->
+        name = Keyword.get(spec, :name)
+        fetcher = fetcher(name, Keyword.get(spec, :get), Keyword.get(spec, :default))
+        setter = setter(name, Keyword.get(spec, :set), Keyword.get(spec, :check))
 
-      case Keyword.get(spec, :alias) do
-	      nil -> acc
-	      alias_ -> [ {getter_alias(name, alias_), setter_alias(name, alias_)} | acc ]
-      end
-    end)
+        acc = [{fetcher, setter} | acc]
+
+        case Keyword.get(spec, :alias) do
+          nil -> acc
+          alias_ -> [{getter_alias(name, alias_), setter_alias(name, alias_)} | acc]
+        end
+      end)
 
     for {fetcher, _} <- clauses do
       Module.eval_quoted(env.module, fetcher)
@@ -54,50 +60,62 @@ defmodule OCCI.Category.Helpers do
 
   @doc false
   def __def_actions__(env) do
-    specs = Enum.reduce(Module.get_attribute(env.module, :actions), [], fn {name, opts}, acc ->
-      {scheme, term} = action_id(name, opts, env)
-      category = :"#{scheme}##{term}"
-      modname = action_module(env, name)
+    specs =
+      Enum.reduce(Module.get_attribute(env.module, :actions), [], fn {name, opts}, acc ->
+        {scheme, term} = action_id(name, opts, env)
+        category = :"#{scheme}##{term}"
+        modname = action_module(env, name)
 
-      opts = [
-        {:category, category},
-        {:scheme, scheme},
-        {:term, term},
-        {:model, Module.get_attribute(env.module, :model)},
-        {:related, Module.get_attribute(env.module, :category)},
-        {:related_mod, env.module}
-        | opts
-      ]
+        opts = [
+          {:category, category},
+          {:scheme, scheme},
+          {:term, term},
+          {:model, Module.get_attribute(env.module, :model)},
+          {:related, Module.get_attribute(env.module, :category)},
+          {:related_mod, env.module}
+          | opts
+        ]
 
-      [ {name, category, modname, opts} | acc ]
-    end)
+        [{name, category, modname, opts} | acc]
+      end)
 
-    specs |> Enum.each(fn {name, category, modname, _opts} ->
-      ast = quote do
-        def action(unquote(category)), do: unquote(modname)
-        def action(unquote(name)), do: unquote(modname)
-      end
+    specs
+    |> Enum.each(fn {name, category, modname, _opts} ->
+      ast =
+        quote do
+          def action(unquote(category)), do: unquote(modname)
+          def action(unquote(name)), do: unquote(modname)
+        end
+
       Module.eval_quoted(env, ast)
     end)
-    ast = quote do
-      def action(_), do: nil
-    end
+
+    ast =
+      quote do
+        def action(_), do: nil
+      end
+
     Module.eval_quoted(env, ast)
 
-    specs |> Enum.each(fn {_name, _category, modname, opts} ->
-      ast = quote do
-        @action_mods unquote(modname)
+    specs
+    |> Enum.each(fn {_name, _category, modname, opts} ->
+      ast =
+        quote do
+          @action_mods unquote(modname)
 
-        defmodule unquote(modname) do
-          use OCCI.Action, unquote(opts)
+          defmodule unquote(modname) do
+            use OCCI.Action, unquote(opts)
+          end
         end
-      end
+
       Module.eval_quoted(env, ast)
     end)
 
-    ast = quote do
-      def actions, do: @action_mods
-    end
+    ast =
+      quote do
+        def actions, do: @action_mods
+      end
+
     Module.eval_quoted(env.module, ast)
   end
 
@@ -126,8 +144,12 @@ defmodule OCCI.Category.Helpers do
   def __merge_modules__(mod1, mod2) when is_list(mod1) and is_list(mod2) do
     Module.concat(mod1 ++ mod2)
   end
-  def __merge_modules__(mod1, mod2) when is_atom(mod1), do: __merge_modules__(Module.split(mod1), mod2)
-  def __merge_modules__(mod1, mod2) when is_atom(mod2), do: __merge_modules__(mod1, Module.split(mod2))
+
+  def __merge_modules__(mod1, mod2) when is_atom(mod1),
+    do: __merge_modules__(Module.split(mod1), mod2)
+
+  def __merge_modules__(mod1, mod2) when is_atom(mod2),
+    do: __merge_modules__(mod1, Module.split(mod2))
 
   ###
   ### Priv
@@ -137,11 +159,13 @@ defmodule OCCI.Category.Helpers do
   end
 
   defp action_id(name, opts, env) do
-    scheme = Keyword.get_lazy(opts, :scheme, fn ->
-      s = Module.get_attribute(env.module, :scheme)
-      t = Module.get_attribute(env.module, :term)
-      "#{s}/#{t}/action"
-    end)
+    scheme =
+      Keyword.get_lazy(opts, :scheme, fn ->
+        s = Module.get_attribute(env.module, :scheme)
+        t = Module.get_attribute(env.module, :term)
+        "#{s}/#{t}/action"
+      end)
+
     term = Keyword.get(opts, :term, name)
     {:"#{scheme}", :"#{term}"}
   end
@@ -153,6 +177,7 @@ defmodule OCCI.Category.Helpers do
       end
     end
   end
+
   defp fetcher(name, custom, _) do
     quote do
       def __fetch_this__(entity, unquote(name)) do
@@ -174,24 +199,28 @@ defmodule OCCI.Category.Helpers do
       end
     end
   end
+
   defp setter(name, nil, {typemod, opts}) do
     quote do
       def __set__(entity, unquote(name), value) do
-	      casted = try do
-		               unquote(typemod).cast(value, unquote(opts))
-		             rescue
-		               e in FunctionClauseError ->
-		                 raise OCCI.Error, {422, "Invalid value: #{inspect value}"}
-		             end
-	      attributes = Map.put(entity.attributes, unquote(name), casted)
-	      %{ entity | attributes: attributes }
+        casted =
+          try do
+            unquote(typemod).cast(value, unquote(opts))
+          rescue
+            e in FunctionClauseError ->
+              raise OCCI.Error, {422, "Invalid value: #{inspect(value)}"}
+          end
+
+        attributes = Map.put(entity.attributes, unquote(name), casted)
+        %{entity | attributes: attributes}
       end
     end
   end
+
   defp setter(name, custom, _) do
     quote do
       def __set__(entity, unquote(name), value) do
-	      unquote(custom).(entity, value)
+        unquote(custom).(entity, value)
       end
     end
   end
@@ -203,17 +232,21 @@ defmodule OCCI.Category.Helpers do
   end
 
   defp add_requires(specs, env) do
-    requires = Enum.reduce(specs, MapSet.new, fn spec, acc ->
-      case Keyword.get(spec, :check) do
-	      nil -> acc
-	      {typemod, _} -> MapSet.put(acc, typemod)
+    requires =
+      Enum.reduce(specs, MapSet.new(), fn spec, acc ->
+        case Keyword.get(spec, :check) do
+          nil -> acc
+          {typemod, _} -> MapSet.put(acc, typemod)
+        end
+      end)
+
+    ast =
+      for mod <- requires do
+        quote do
+          require unquote(mod)
+        end
       end
-    end)
-    ast = for mod <- requires do
-      quote do
-	      require unquote(mod)
-      end
-    end
+
     Module.eval_quoted(env.module, ast)
   end
 end

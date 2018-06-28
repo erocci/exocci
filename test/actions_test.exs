@@ -12,24 +12,28 @@ defmodule ActionsTest do
       attributes: [
         attr0: [type: OCCI.Types.String]
       ] do
+      action(
+        title: "An action",
+        attributes: [
+          reason: [type: OCCI.Types.String]
+        ]
+      )
 
-      action title: "An action", attributes: [
-	      reason: [type: OCCI.Types.String]
-	    ]
-      def action0(entity, %{ reason: reason}) do
+      def action0(entity, %{reason: reason}) do
         OCCI.Entity.set(entity, :attr0, reason)
       end
 
-      action :action1
+      action(:action1)
 
-      action :action2,
+      action(
+        :action2,
         title: "An action with options"
+      )
     end
 
     mixin Mixin0,
-      title: "A mixin"
-      do
-      action :action0
+      title: "A mixin" do
+      action(:action0)
     end
   end
 
@@ -37,30 +41,36 @@ defmodule ActionsTest do
     use OCCI.Model,
       scheme: "http://example.org/occi2#"
 
-    extends ActionsModel
+    extends(ActionsModel)
   end
 
   test "Action definition" do
-    assert match?([
-      "An action with options",
-      "Action http://example.org/occi/kind0/action#action1",
-      "An action"
-    ],
-      ActionsModel.Kind0.actions() |> Enum.map(&(&1.title())))
+    assert match?(
+             [
+               "An action with options",
+               "Action http://example.org/occi/kind0/action#action1",
+               "An action"
+             ],
+             ActionsModel.Kind0.actions() |> Enum.map(& &1.title())
+           )
 
-    assert match?([
-      "Action http://example.org/occi/mixin0/action#action0"
-    ],
-      ActionsModel.Mixin0.actions() |> Enum.map(&(&1.title())))
+    assert match?(
+             [
+               "Action http://example.org/occi/mixin0/action#action0"
+             ],
+             ActionsModel.Mixin0.actions() |> Enum.map(& &1.title())
+           )
   end
 
   test "Action categories" do
-    assert match?([
-      :"http://example.org/occi/kind0/action#action2",
-      :"http://example.org/occi/kind0/action#action1",
-      :"http://example.org/occi/kind0/action#action0"
-    ],
-      ActionsModel.Kind0.actions() |> Enum.map(&(&1.category())))
+    assert match?(
+             [
+               :"http://example.org/occi/kind0/action#action2",
+               :"http://example.org/occi/kind0/action#action1",
+               :"http://example.org/occi/kind0/action#action0"
+             ],
+             ActionsModel.Kind0.actions() |> Enum.map(& &1.category())
+           )
   end
 
   # test "Launch action" do
