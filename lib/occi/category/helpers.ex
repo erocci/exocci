@@ -11,18 +11,7 @@ defmodule OCCI.Category.Helpers do
   def __def_attributes__(env) do
     specs = Module.get_attribute(env.module, :attributes, [])
 
-    requires = Enum.reduce(specs, MapSet.new, fn spec, acc ->
-      case Keyword.get(spec, :check) do
-	      nil -> acc
-	      {typemod, _} -> MapSet.put(acc, typemod)
-      end
-    end)
-    ast = for mod <- requires do
-      quote do
-	      require unquote(mod)
-      end
-    end
-    Module.eval_quoted(env.module, ast)
+    _ = add_requires(specs, env)
 
     defaults = Enum.reduce(specs, %{}, fn spec, acc ->
       case Keyword.get(spec, :default) do
@@ -211,5 +200,20 @@ defmodule OCCI.Category.Helpers do
     quote do
       def __set__(entity, unquote(alias_), value), do: __set__(entity, unquote(name), value)
     end
+  end
+
+  defp add_requires(specs, env) do
+    requires = Enum.reduce(specs, MapSet.new, fn spec, acc ->
+      case Keyword.get(spec, :check) do
+	      nil -> acc
+	      {typemod, _} -> MapSet.put(acc, typemod)
+      end
+    end)
+    ast = for mod <- requires do
+      quote do
+	      require unquote(mod)
+      end
+    end
+    Module.eval_quoted(env.module, ast)
   end
 end
