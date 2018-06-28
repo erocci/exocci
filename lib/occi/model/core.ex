@@ -3,8 +3,11 @@ defmodule OCCI.Model.Core do
     core: false,
     scheme: "http://schemas.ogf.org/occi/core"
 
+  alias OCCI.Types
+
+  require Types.String
+
   kind Entity do
-    alias OCCI.Types
     alias OCCI.Model.Core.Entity
 
     @type location :: String.t
@@ -112,7 +115,6 @@ defmodule OCCI.Model.Core do
 
   kind Resource,
     parent: Entity do
-    alias OCCI.Types
 
     attribute "occi.core.summary",
       alias: :summary,
@@ -136,7 +138,6 @@ defmodule OCCI.Model.Core do
 
   kind Link,
     parent: Entity do
-    alias OCCI.Types
     alias OCCI.Model.Core.Entity
 
     attribute :source,
