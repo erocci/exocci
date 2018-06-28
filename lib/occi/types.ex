@@ -30,7 +30,8 @@ defmodule OCCI.Types do
 	      else
 	        raise OCCI.Error, {422, "#{mod} do not implements OCCI.Types behaviour"}
 	      end
-      _ -> raise OCCI.Error, {422, "Unknown OCCI type: #{mod}"}
+      _ ->
+        raise OCCI.Error, {422, "You should require #{mod} before using it"}
     end
   end
   def check(mod) when is_atom(mod) do
