@@ -1,4 +1,10 @@
 defmodule OCCI.Kind do
+  @moduledoc """
+  This module should not be used directly but through the macro
+  `OCCI.Model.kind/3`
+  """
+
+  @doc false
   defmacro __using__(opts) do
     parent = Keyword.get(opts, :parent)
     opts = [{:type, :kind} | opts]

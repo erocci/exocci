@@ -1,4 +1,8 @@
 defmodule OCCI.Filter do
+  @moduledoc """
+  Defines filters for looking up OCCI datastore
+  """
+
   @type filter :: f_not | f_or | f_and | f_category | f_core | f_attr
   @type f_not :: {:not, filter}
   @type f_or :: {:or, [filter]}

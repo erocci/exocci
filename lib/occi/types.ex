@@ -1,4 +1,29 @@
 defmodule OCCI.Types do
+  @moduledoc """
+  Behaviour for OCCI attributes types.
+
+  Attribute types are used to check and cast input value.
+
+  When declaring an attribute, you must declare its type:
+  ```
+  attribute "my.type",
+    type: OCCI.Types.Integer
+  ```
+
+  Options can be given to the application
+  ```
+  attribute "my.type",
+    type: {OCCI.Types.Integer, min: 32}
+  ```
+
+  Enumerations are declared as simply as:
+  ```
+  attribute "my.type",
+    type: [:value1, :value2]
+  ```
+  """
+
+  @doc false
   defmacro __using__(_opts) do
     quote do
       @behaviour OCCI.Types
@@ -48,6 +73,16 @@ defmodule OCCI.Types do
 end
 
 defmodule OCCI.Types.String do
+  @moduledoc """
+  OCCI Type: String
+
+  Options:
+  * `match`: PCRE regexp
+
+  Example:
+  * `OCCI.Types.String`
+  * `{OCCI.Types.String, match: "..."}`
+  """
   use OCCI.Types
 
   def check_opts(opts) do
@@ -94,12 +129,24 @@ defmodule OCCI.Types.String do
 end
 
 defmodule OCCI.Types.URI do
+  @moduledoc """
+  OCCI Type: URI
+
+  Actually same as `OCCI.Types.String`
+  """
+
   use OCCI.Types
   defdelegate cast(v), to: OCCI.Types.String
   defdelegate cast(v, opts), to: OCCI.Types.String
 end
 
 defmodule OCCI.Types.Kind do
+  @moduledoc """
+  OCCI type: Kind
+
+  Example:
+  * `{OCCI.Types.Kind, Model}`
+  """
   use OCCI.Types
 
   def check_opts(model) when is_atom(model), do: true
@@ -117,6 +164,12 @@ defmodule OCCI.Types.Kind do
 end
 
 defmodule OCCI.Types.Mixin do
+  @moduledoc """
+  OCCI type: Mixin
+
+  Example:
+  * `{OCCI.Types.Mixin, Model}`
+  """
   use OCCI.Types
 
   def check_opts(model) when is_atom(model), do: true
@@ -134,6 +187,17 @@ defmodule OCCI.Types.Mixin do
 end
 
 defmodule OCCI.Types.Integer do
+  @moduledoc """
+  OCCI type: integer
+
+  Options:
+  * `min`
+  * `max`
+
+  Example:
+  * `OCCI.Types.Integer`
+  * `{OCCI.Types.Integer, min: 2, max: 45}`
+  """
   use OCCI.Types
 
   def check_opts(_), do: true
@@ -162,6 +226,12 @@ defmodule OCCI.Types.Integer do
 end
 
 defmodule OCCI.Types.Float do
+  @moduledoc """
+  OCCI type: float
+
+  Example:
+  * `OCCI.Types.Float`
+  """
   use OCCI.Types
 
   def cast(v, opts \\ nil)
@@ -180,6 +250,12 @@ defmodule OCCI.Types.Float do
 end
 
 defmodule OCCI.Types.Boolean do
+  @moduledoc """
+  OCCI type: boolean
+
+  Example:
+  * `OCCI.Types.Boolean`
+  """
   use OCCI.Types
 
   def cast(v, _) when is_boolean(v), do: true
@@ -190,6 +266,13 @@ defmodule OCCI.Types.Boolean do
 end
 
 defmodule OCCI.Types.Enum do
+  @moduledoc """
+  OCCI type: enumeration
+
+  Example:
+  * `{OCCI.Types.Enum, [:value1, :value2]}`
+  * `[:value1, :value2]`
+  """
   use OCCI.Types
 
   def check_opts(values) when is_list(values), do: true
@@ -207,6 +290,16 @@ defmodule OCCI.Types.Enum do
 end
 
 defmodule OCCI.Types.Array do
+  @moduledoc """
+  OCCI type: (eventually typed) array
+
+  Options:
+  * `type`: the type of each element
+
+  Example:
+  * `OCCI.Types.Array`
+  * `{OCCI.Types.Array, type: {OCCI.Types.Integer, min: 4}}`
+  """
   use OCCI.Types
 
   def cast(arr, opts) when is_list(arr) do
@@ -222,6 +315,12 @@ defmodule OCCI.Types.Array do
 end
 
 defmodule OCCI.Types.CIDR do
+  @moduledoc """
+  OCCI type: CIDR
+
+  Values are casted to:
+  `{:inet.ip_address(), netmask :: integer}`
+  """
   use OCCI.Types
 
   def cast(v, _ \\ nil) do

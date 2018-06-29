@@ -1,4 +1,9 @@
 defmodule OCCI.Model.Core do
+  @moduledoc """
+  Declaration of OCCI Core model: `Entity`, `Resource`, `Link`
+
+  See [https://www.ogf.org/documents/GFD.221.pdf]
+  """
   use OCCI.Model,
     core: false,
     scheme: "http://schemas.ogf.org/occi/core"

@@ -1,4 +1,10 @@
 defmodule OCCI.Action do
+  @moduledoc """
+  This module should not be used directly but through the macro
+  `OCCI.Category.action/{1,2}`
+  """
+
+  @doc false
   defmacro __using__(opts) do
     name = Keyword.get(opts, :name)
     related = Keyword.get(opts, :related)

@@ -1,4 +1,14 @@
 defmodule OCCI.Store do
+  @moduledoc """
+  OCCI datastore entry point
+
+  OCCI entities are stored in backends (see `OCCI.Backend`). Backend
+  must be declared in `:occi` env, for instance:
+  ```
+  config :occi, backend: {OCCI.Backend.Agent, priv_dir: "data.json"}
+  ```
+  """
+
   alias OCCI.Model.Core.Entity
   require Logger
 
@@ -22,7 +32,7 @@ defmodule OCCI.Store do
   """
   @spec get(Entity.location()) :: Core.Entity.t() | nil
   def get(location) do
-    Logger.debug("Store.get(#{location})")
+    Logger.debug(fn -> "Store.get(#{location})" end)
     call(:fetch, [location])
   end
 
@@ -31,7 +41,7 @@ defmodule OCCI.Store do
   """
   @spec lookup([OCCI.Filter.t()]) :: [Entity.t()]
   def lookup(filter) do
-    Logger.debug("Store.lookup(#{inspect(filter)})")
+    Logger.debug(fn -> "Store.lookup(#{inspect(filter)})" end)
     call(:lookup, [filter])
   end
 
@@ -40,7 +50,7 @@ defmodule OCCI.Store do
   """
   @spec create(Entity.t(), Entity.owner()) :: Core.Entity.t()
   def create(entity, location \\ nil, owner \\ nil) do
-    Logger.debug("Store.create(#{inspect(entity)})")
+    Logger.debug(fn -> "Store.create(#{inspect(entity)})" end)
 
     location =
       if location do
@@ -60,7 +70,7 @@ defmodule OCCI.Store do
   """
   @spec update(Entity.t()) :: Entity.t()
   def update(entity) do
-    Logger.debug("Store.update(#{inspect(entity)})")
+    Logger.debug(fn -> "Store.update(#{inspect(entity)})" end)
 
     case call(:fetch, Entity.location(entity)) do
       nil -> raise OCCI.Error, 404
@@ -73,7 +83,7 @@ defmodule OCCI.Store do
   """
   @spec delete(OCCI.Node.location()) :: boolean
   def delete(location) do
-    Logger.debug("Store.delete(#{location})")
+    Logger.debug(fn -> "Store.delete(#{location})" end)
 
     case call(:fetch, location) do
       nil -> raise OCCI.Error, 404

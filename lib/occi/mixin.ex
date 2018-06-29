@@ -1,6 +1,11 @@
 defmodule OCCI.Mixin do
+  @moduledoc """
+  This module should not be used directly but through the macro
+  `OCCI.Model.mixin/2`
+  """
   alias OCCI.Category.Helpers
 
+  @doc false
   defmacro __using__(opts) do
     tag = Keyword.get(opts, :tag, false)
 
