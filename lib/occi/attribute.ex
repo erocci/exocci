@@ -9,7 +9,8 @@ defmodule OCCI.Attribute do
   """
   @spec spec(name :: charlist() | String.t() | atom, opts :: list) :: opts :: []
   def spec(name, opts) do
-    Enum.map(opts, fn
+    opts
+    |> Enum.map(fn
       {:type, type} ->
         {:check, Types.check(type)}
 

@@ -17,7 +17,7 @@ defmodule OCCI.Backend.Agent do
       end
 
     model = Application.get_env(:occi, :model, OCCI.Model.Core)
-    data = File.read!(path) |> Poison.decode!(keys: :atoms) |> parse(model)
+    data = path |> File.read!() |> Poison.decode!(keys: :atoms) |> parse(model)
     {:ok, data}
   end
 
@@ -53,7 +53,8 @@ defmodule OCCI.Backend.Agent do
   ###
   defp parse(data, model) do
     Enum.reduce(data, %{}, fn item, store ->
-      OCCI.Rendering.JSON.parse(model, item)
+      model
+      |> OCCI.Rendering.JSON.parse(item)
       |> (&Map.put(store, Entity.location(&1), &1)).()
     end)
   end

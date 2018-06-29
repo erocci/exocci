@@ -9,7 +9,8 @@ defmodule OCCI.Rendering.JSON do
     kind = Map.get_lazy(data, :kind, fn -> raise OCCI.Error, {422, "Missing attribute: kind"} end)
 
     mixins =
-      Map.get(data, :mixins, [])
+      data
+      |> Map.get(:mixins, [])
       |> Enum.map(fn mixin ->
         case model.module(mixin) do
           nil -> raise OCCI.Error, {422, "Invalid category: #{mixin}"}

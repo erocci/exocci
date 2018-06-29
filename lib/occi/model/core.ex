@@ -137,7 +137,8 @@ defmodule OCCI.Model.Core do
       model = entity.__node__.created_in
 
       defaults =
-        model.required([entity.kind | entity.mixins])
+        [entity.kind | entity.mixins]
+        |> model.required()
         |> Enum.reduce(%{}, fn key, acc -> Map.put(acc, key, get(entity, key)) end)
 
       entity

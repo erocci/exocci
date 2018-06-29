@@ -9,8 +9,8 @@ defmodule OCCI.Mixin do
   defmacro __using__(opts) do
     tag = Keyword.get(opts, :tag, false)
 
-    depends = Keyword.get(opts, :depends, []) |> Enum.map(&Macro.expand(&1, __CALLER__))
-    applies = Keyword.get(opts, :applies, []) |> Enum.map(&Macro.expand(&1, __CALLER__))
+    depends = opts |> Keyword.get(:depends, []) |> Enum.map(&Macro.expand(&1, __CALLER__))
+    applies = opts |> Keyword.get(:applies, []) |> Enum.map(&Macro.expand(&1, __CALLER__))
 
     opts = [{:type, :mixin} | opts]
 
