@@ -2,6 +2,8 @@
 
 [![Hex.pm](https://img.shields.io/hexpm/v/occi.svg)](https://hex.pm/packages/occi)
 
+[![Build Status](https://travis-ci.org/erocci/exocci.svg?branch=master)](https://travis-ci.org/erocci/exocci)
+
 `exocci` implements
 the [OCCI meta-model](http://occi-wg.org/about/specification/)
 ([Core](http://ogf.org/documents/GFD.221.pdf),
