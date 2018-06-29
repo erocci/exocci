@@ -208,7 +208,8 @@ defmodule OCCI.Category.Helpers do
             unquote(typemod).cast(value, unquote(opts))
           rescue
             e in FunctionClauseError ->
-              raise OCCI.Error, {422, "Invalid value: #{inspect(value)}"}
+              stacktrace = System.stacktrace()
+              reraise OCCI.Error, {422, "Invalid value: #{inspect(value)}"}, stacktrace
           end
 
         attributes = Map.put(entity.attributes, unquote(name), casted)

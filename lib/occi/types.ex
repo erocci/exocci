@@ -349,8 +349,9 @@ defmodule OCCI.Types.CIDR do
 
       "#{:inet.ntoa(cidr)}/#{mask}"
     rescue
-      _ ->
-        raise OCCI.Error, {422, "Invalid CIDR: #{inspect(v)}"}
+      _exc ->
+        stacktrace = System.stacktrace()
+        reraise OCCI.Error, {422, "Invalid CIDR: #{inspect(v)}"}, stacktrace
     end
   end
 end

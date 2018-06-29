@@ -88,10 +88,12 @@ defmodule OCCI.Action do
       mod.__get__(action, key)
     rescue
       FunctionClauseError ->
-        raise OCCI.Error, {422, "Undefined attribute: #{key}"}
+        stacktrace = System.stacktrace()
+        reraise OCCI.Error, {422, "Undefined attribute: #{key}"}, stacktrace
 
       UndefinedFunctionError ->
-        raise OCCI.Error, {422, "Undefined attribute: #{key}"}
+        stacktrace = System.stacktrace()
+        reraise OCCI.Error, {422, "Undefined attribute: #{key}"}, stacktrace
     end
   end
 
@@ -103,10 +105,12 @@ defmodule OCCI.Action do
       mod.__set__(action, key, value)
     rescue
       FunctionClauseError ->
-        raise OCCI.Error, {422, "Undefined attribute: #{key}"}
+        stacktrace = System.stacktrace()
+        reraise OCCI.Error, {422, "Undefined attribute: #{key}"}, stacktrace
 
       UndefinedFunctionError ->
-        raise OCCI.Error, {422, "Undefined attribute: #{key}"}
+        stacktrace = System.stacktrace()
+        reraise OCCI.Error, {422, "Undefined attribute: #{key}"}, stacktrace
     end
   end
 
