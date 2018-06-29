@@ -16,7 +16,7 @@ detailed explanations.
 
 ## Installation
 
-  1. Add `exocci` to your list of dependencies in `mix.exs`:
+    Add `exocci` to your list of dependencies in `mix.exs`:
 
     ```elixir
     def deps do
@@ -24,18 +24,6 @@ detailed explanations.
     end
     ```
 
-  2. Ensure `exocci` is started before your application:
-
-    ```elixir
-    def application do
-      [applications: [:exocci]]
-    end
-    ```
-
 ## TODO
 
 * Use protocol for serialization
-
-### Attributes
-
-### Categories
