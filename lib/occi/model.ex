@@ -37,120 +37,16 @@ defmodule OCCI.Model do
     Module.put_attribute(__CALLER__.module, :actions, [])
 
     quote do
-      require OCCI.Model
-      import OCCI.Model
+      unquote(prelude())
 
-      if unquote(import_core) do
-        imports = Module.get_attribute(__MODULE__, :imports)
-        Module.put_attribute(__MODULE__, :imports, OrdSet.add(imports, OCCI.Model.Core))
-      end
+      import_core = unquote(import_core)
+      unquote(maybe_import_core(import_core))
 
-      defmodule unquote(user_mixins_mod) do
-        @doc false
-        def mixins, do: []
+      user_mixins_mod = unquote(user_mixins_mod)
+      unquote(define_user_mixins_mod(user_mixins_mod))
+      unquote(define_user_mixins_functions(user_mixins_mod))
 
-        @doc false
-        def __mixins__, do: Map.new()
-      end
-
-      @doc """
-      Return true if `name` is a valid kind module
-      """
-      @spec kind?(atom) :: boolean
-      def kind?(mod) when is_atom(mod) do
-        function_exported?(mod, :__occi_type__, 0) and mod.__occi_type__() == :kind
-      end
-
-      @doc """
-      Return true if `name` if a valid mixin module
-      """
-      @spec mixin?(atom) :: boolean
-      def mixin?(mod) when is_atom(mod) do
-        function_exported?(mod, :__occi_type__, 0) and mod.__occi_type__() == :mixin
-      end
-
-      @doc """
-      Given a list of categories, returns all attributes specs
-      """
-      def specs(categories) do
-        Enum.reduce(categories, OrdSet.new(), fn category, acc ->
-          OrdSet.merge(acc, category.__specs__())
-        end)
-      end
-
-      @doc """
-      Given a list of categories, returns list of required attributes
-      """
-      def required(categories) do
-        Enum.reduce(categories, OrdSet.new(), fn category, acc ->
-          OrdSet.merge(acc, category.required())
-        end)
-      end
-
-      @doc """
-      Given a list of categories, returns all action specifications
-      """
-      def actions(categories) do
-        Enum.reduce(categories, OrdSet.new(), fn category, acc ->
-          OrdSet.merge(acc, category.actions())
-        end)
-      end
-
-      @doc """
-      Return list of available mixins
-      """
-      @spec mixins() :: [atom]
-      def mixins do
-        Enum.reduce(
-          @imports,
-          OrdSet.merge(Map.values(@mixins), unquote(user_mixins_mod).mixins()),
-          &OrdSet.merge(&1.mixins(), &2)
-        )
-      end
-
-      @doc """
-      Add user mixin (tag)
-
-      * `module`: module name, related to model name
-      * `category`: category name
-      """
-      @spec add_mixin(module :: atom, category :: charlist() | String.t() | atom) :: atom
-      def add_mixin(module, category) do
-        module = Module.concat(Module.split(__MODULE__) ++ Module.split(module))
-        {scheme, term} = Helpers.__parse_category__(category)
-        args = [{:model, __MODULE__}, {:scheme, scheme}, {:term, term}, {:tag, true}]
-
-        q =
-          quote do
-            defmodule unquote(module) do
-              use OCCI.Mixin, unquote(args)
-            end
-          end
-
-        _ = Code.compile_quoted(q)
-
-        :ok =
-          update_user_mixins(
-            Map.put(unquote(user_mixins_mod).__mixins__(), :"#{category}", module)
-          )
-
-        module
-      end
-
-      @doc """
-      Delete user mixin (tag)
-      """
-      @spec del_mixin(module :: atom) :: :ok | :error
-      def del_mixin(module) do
-        if function_exported?(module, :__occi_type__, 0) and module.__occi_type__() == :mixin and
-             module.tag?() do
-          category = module.category()
-          true = :code.delete(module)
-          :ok = update_user_mixins(unquote(user_mixins_mod).__mixins__() |> Map.delete(category))
-        else
-          :error
-        end
-      end
+      unquote(define_common_functions())
 
       @doc """
       Return module associated with the given category
@@ -159,6 +55,7 @@ defmodule OCCI.Model do
       def module(name) do
         name = :"#{name}"
 
+        # credo:disable-for-lines:7
         Map.get_lazy(@kinds, name, fn ->
           Map.get_lazy(@mixins, name, fn ->
             Map.get_lazy(unquote(user_mixins_mod).__mixins__(), name, fn ->
@@ -168,78 +65,7 @@ defmodule OCCI.Model do
         end)
       end
 
-      @doc """
-      Returns list of mixins applicable to a given kind
-      """
-      def applicable_mixins(kind) do
-        Enum.reduce(mixins(), [], fn mixin, acc ->
-          if mixin.apply?(kind), do: [mixin | acc], else: acc
-        end)
-      end
-
-      @doc false
-      def __imports__ do
-        Enum.reduce(@imports, OCCI.OrdSet.new(), &OCCI.OrdSet.merge(&2, [&1 | &1.__imports__()]))
-      end
-
-      @doc false
-      #
-      # When launching an action on an entity, look for implementation in
-      # creation model, creation model's imports, then related category.
-      #
-      def __exec__(action, entity) do
-        fun = :"__#{OCCI.Action.id(action)}__"
-        attrs = OCCI.Action.attributes(action)
-        related = OCCI.Action.related(action)
-        related_mod = OCCI.Action.__related_mod__(action)
-        model = OCCI.Model.Core.Entity.__model__(entity)
-        __exec__(entity, attrs, related, related_mod, fun, [model | model.__imports__()])
-      end
-
-      defp __exec__(entity, attrs, _related, related_mod, fun, []) do
-        try do
-          apply(related_mod, fun, [entity, attrs])
-        rescue
-          UndefinedFunctionError ->
-            # No implementation found, returns entity
-            entity
-        end
-      end
-
-      defp __exec__(entity, attrs, related, related_mod, fun, [model | models]) do
-        try do
-          apply(model, fun, [entity, attrs])
-        rescue
-          e in UndefinedFunctionError ->
-            __exec__(entity, attrs, related, related_mod, fun, models)
-        end
-      end
-
-      defp update_user_mixins(mixins) do
-        mixins = Macro.escape(mixins)
-        mod = unquote(user_mixins_mod)
-
-        q =
-          quote do
-            defmodule unquote(mod) do
-              @mixins unquote(mixins)
-
-              @doc """
-              Return list of user mixins
-              """
-              def mixins, do: Map.values(@mixins)
-
-              @doc false
-              def __mixins__, do: @mixins
-            end
-          end
-
-        _ = Code.compiler_options(ignore_module_conflict: true)
-        _ = Code.compile_quoted(q)
-        :ok
-      end
-
-      @before_compile OCCI.Model
+      unquote(define_hidden_functions())
     end
   end
 
@@ -392,6 +218,218 @@ defmodule OCCI.Model do
   ###
   ### Priv
   ###
+  defp prelude do
+    quote do
+      require OCCI.Model
+      import OCCI.Model
+
+      @before_compile unquote(__MODULE__)
+    end
+  end
+
+  def maybe_import_core(false), do: nil
+
+  def maybe_import_core(true) do
+    quote do
+      imports = Module.get_attribute(__MODULE__, :imports)
+      Module.put_attribute(__MODULE__, :imports, OrdSet.add(imports, OCCI.Model.Core))
+    end
+  end
+
+  def define_user_mixins_mod(name) do
+    quote do
+      defmodule unquote(name) do
+        @doc false
+        def mixins, do: []
+
+        @doc false
+        def __mixins__, do: Map.new()
+      end
+    end
+  end
+
+  def define_common_functions do
+    quote do
+      @doc """
+      Return true if `name` is a valid kind module
+      """
+      @spec kind?(atom) :: boolean
+      def kind?(mod) when is_atom(mod) do
+        function_exported?(mod, :__occi_type__, 0) and mod.__occi_type__() == :kind
+      end
+
+      @doc """
+      Return true if `name` if a valid mixin module
+      """
+      @spec mixin?(atom) :: boolean
+      def mixin?(mod) when is_atom(mod) do
+        function_exported?(mod, :__occi_type__, 0) and mod.__occi_type__() == :mixin
+      end
+
+      @doc """
+      Given a list of categories, returns all attributes specs
+      """
+      def specs(categories) do
+        Enum.reduce(categories, OrdSet.new(), fn category, acc ->
+          OrdSet.merge(acc, category.__specs__())
+        end)
+      end
+
+      @doc """
+      Given a list of categories, returns list of required attributes
+      """
+      def required(categories) do
+        Enum.reduce(categories, OrdSet.new(), fn category, acc ->
+          OrdSet.merge(acc, category.required())
+        end)
+      end
+
+      @doc """
+      Given a list of categories, returns all action specifications
+      """
+      def actions(categories) do
+        Enum.reduce(categories, OrdSet.new(), fn category, acc ->
+          OrdSet.merge(acc, category.actions())
+        end)
+      end
+    end
+  end
+
+  def define_user_mixins_functions(user_mixins_mod) do
+    quote do
+      @doc """
+      Return list of available mixins
+      """
+      @spec mixins() :: [atom]
+      def mixins do
+        Enum.reduce(
+          @imports,
+          OrdSet.merge(Map.values(@mixins), unquote(user_mixins_mod).mixins()),
+          &OrdSet.merge(&1.mixins(), &2)
+        )
+      end
+
+      @doc """
+      Add user mixin (tag)
+
+      * `module`: module name, related to model name
+      * `category`: category name
+      """
+      @spec add_mixin(module :: atom, category :: charlist() | String.t() | atom) :: atom
+      def add_mixin(module, category) do
+        module = Module.concat(Module.split(__MODULE__) ++ Module.split(module))
+        {scheme, term} = Helpers.__parse_category__(category)
+        args = [{:model, __MODULE__}, {:scheme, scheme}, {:term, term}, {:tag, true}]
+
+        q =
+          quote do
+            defmodule unquote(module) do
+              use OCCI.Mixin, unquote(args)
+            end
+          end
+
+        _ = Code.compile_quoted(q)
+
+        :ok =
+          update_user_mixins(
+            Map.put(unquote(user_mixins_mod).__mixins__(), :"#{category}", module)
+          )
+
+        module
+      end
+
+      @doc """
+      Delete user mixin (tag)
+      """
+      @spec del_mixin(module :: atom) :: :ok | :error
+      def del_mixin(module) do
+        if function_exported?(module, :__occi_type__, 0) and module.__occi_type__() == :mixin and
+             module.tag?() do
+          category = module.category()
+          true = :code.delete(module)
+          :ok = update_user_mixins(unquote(user_mixins_mod).__mixins__() |> Map.delete(category))
+        else
+          :error
+        end
+      end
+
+      @doc """
+      Returns list of mixins applicable to a given kind
+      """
+      def applicable_mixins(kind) do
+        Enum.reduce(mixins(), [], fn mixin, acc ->
+          if mixin.apply?(kind), do: [mixin | acc], else: acc
+        end)
+      end
+
+      defp update_user_mixins(mixins) do
+        mixins = Macro.escape(mixins)
+        mod = unquote(user_mixins_mod)
+
+        q =
+          quote do
+            defmodule unquote(mod) do
+              @mixins unquote(mixins)
+
+              @doc """
+              Return list of user mixins
+              """
+              def mixins, do: Map.values(@mixins)
+
+              @doc false
+              def __mixins__, do: @mixins
+            end
+          end
+
+        _ = Code.compiler_options(ignore_module_conflict: true)
+        _ = Code.compile_quoted(q)
+        :ok
+      end
+    end
+  end
+
+  defp define_hidden_functions do
+    quote do
+      @doc false
+      def __imports__ do
+        Enum.reduce(@imports, OCCI.OrdSet.new(), &OCCI.OrdSet.merge(&2, [&1 | &1.__imports__()]))
+      end
+
+      @doc false
+      #
+      # When launching an action on an entity, look for implementation in
+      # creation model, creation model's imports, then related category.
+      #
+      def __exec__(action, entity) do
+        fun = :"__#{OCCI.Action.id(action)}__"
+        attrs = OCCI.Action.attributes(action)
+        related = OCCI.Action.related(action)
+        related_mod = OCCI.Action.__related_mod__(action)
+        model = OCCI.Model.Core.Entity.__model__(entity)
+        __exec__(entity, attrs, related, related_mod, fun, [model | model.__imports__()])
+      end
+
+      defp __exec__(entity, attrs, _related, related_mod, fun, []) do
+        try do
+          apply(related_mod, fun, [entity, attrs])
+        rescue
+          UndefinedFunctionError ->
+            # No implementation found, returns entity
+            entity
+        end
+      end
+
+      defp __exec__(entity, attrs, related, related_mod, fun, [model | models]) do
+        try do
+          apply(model, fun, [entity, attrs])
+        rescue
+          e in UndefinedFunctionError ->
+            __exec__(entity, attrs, related, related_mod, fun, models)
+        end
+      end
+    end
+  end
+
   defp gen_exts_doc(doc, exts) do
     if Enum.empty?(exts) do
       doc
