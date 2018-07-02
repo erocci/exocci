@@ -8,9 +8,7 @@ defmodule OCCI.Mixfile do
       elixir: "~> 1.3",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
-      aliases: [
-        compile: ["format", "compile", "credo"]
-      ],
+      aliases: aliases(Mix.env()),
       deps: deps(),
       name: "exocci",
       description: description(),
@@ -50,6 +48,7 @@ defmodule OCCI.Mixfile do
 
   defp deps do
     [
+      {:occi_types, ">= 0.0.0"},
       {:credo, "~> 0.9", only: [:dev, :test], runtime: false},
       {:poison, "~> 3.1"},
       {:uuid, "~> 1.1"},
@@ -76,7 +75,7 @@ defmodule OCCI.Mixfile do
           OCCI.Attribute,
           OCCI.OrdSet
         ],
-        "Attribute Types": ~r/^OCCI.Types.?/,
+        # "Attribute Types": ~r/^OCCI.Types.?/,
         Datastore: [
           OCCI.Store,
           OCCI.Backend,
@@ -92,4 +91,12 @@ defmodule OCCI.Mixfile do
       ]
     ]
   end
+
+  defp aliases(env) when env in [:dev, :test] do
+    [
+      compile: ["format", "compile", "credo"]
+    ]
+  end
+
+  defp aliases(_), do: []
 end
