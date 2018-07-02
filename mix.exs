@@ -17,11 +17,7 @@ defmodule OCCI.Mixfile do
       package: package(),
       source_url: "https://github.com/erocci/exocci",
       homepage_url: "https://github.com/erocci/exocci",
-      docs: [
-        main: "OCCI",
-        logo: "_doc/erocci-logo-only.png",
-        extras: ["_doc/manual.md"]
-      ]
+      docs: docs()
     ]
   end
 
@@ -58,7 +54,42 @@ defmodule OCCI.Mixfile do
       {:poison, "~> 3.1"},
       {:uuid, "~> 1.1"},
       {:earmark, "~> 1.2", only: :dev},
-      {:ex_doc, "~> 0.15", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "OCCI",
+      logo: "_doc/erocci-logo-only.png",
+      extras: ["_doc/manual.md"],
+      source_url: "https://github.com/erocci/exocci",
+      groups_for_modules: [
+        Core: [
+          OCCI,
+          OCCI.Model,
+          OCCI.Category,
+          OCCI.Category.Helpers,
+          OCCI.Kind,
+          OCCI.Mixin,
+          OCCI.Action,
+          OCCI.Attribute,
+          OCCI.OrdSet
+        ],
+        "Attribute Types": ~r/^OCCI.Types.?/,
+        Datastore: [
+          OCCI.Store,
+          OCCI.Backend,
+          OCCI.Backend.Agent,
+          OCCI.Filter,
+          OCCI.Node
+        ],
+        Renderings: [
+          OCCI.Rendering.JSON
+        ],
+        "Core Categories": ~r/^OCCI.Model.Core.?/,
+        "Standard Categories": ~r/^OCCI.Model.Infrastructure.?/
+      ]
     ]
   end
 end
