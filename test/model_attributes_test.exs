@@ -80,7 +80,7 @@ defmodule ModelAttributesTest do
              ModelAttributesModel.Kind0.new(%{id: "/an_id", attr1: :trois})
            )
 
-    assert_raise OCCI.Error, ~r/^Invalid value:.*$/, fn ->
+    assert_raise OCCI.Types.Error, ~r/^Invalid value:.*$/, fn ->
       ModelAttributesModel.Kind0.new(%{id: "/an_id", attr1: :quatre})
     end
   end
