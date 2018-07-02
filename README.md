@@ -9,7 +9,7 @@ the [OCCI meta-model](http://occi-wg.org/about/specification/)
 
 `OCCI.Model.Infrastructure` module is an example of model defined with the DSL.
 
-See the [documentation on hexdocs.pm](http://hexdocs.pm/exocci) for more
+See the [documentation on hexdocs.pm](http://hexdocs.pm/occi) for more
 detailed explanations.
 
 ## Installation
