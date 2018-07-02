@@ -1,8 +1,6 @@
 # Exocci
 
-[![Hex.pm](https://img.shields.io/hexpm/v/occi.svg)](https://hex.pm/packages/occi)
-
-[![Build Status](https://travis-ci.org/erocci/exocci.svg?branch=master)](https://travis-ci.org/erocci/exocci)
+[![Hex.pm](https://img.shields.io/hexpm/v/occi.svg)](https://hex.pm/packages/occi) [![Build Status](https://travis-ci.org/erocci/exocci.svg?branch=master)](https://travis-ci.org/erocci/exocci)
 
 `exocci` implements
 the [OCCI meta-model](http://occi-wg.org/about/specification/)
@@ -11,7 +9,7 @@ the [OCCI meta-model](http://occi-wg.org/about/specification/)
 
 `OCCI.Model.Infrastructure` module is an example of model defined with the DSL.
 
-See the [generated documentation](http://hexdocs.pm/exocci) for more
+See the [documentation on hexdocs.pm](http://hexdocs.pm/exocci) for more
 detailed explanations.
 
 ## Installation
