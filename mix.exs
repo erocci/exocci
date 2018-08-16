@@ -5,7 +5,7 @@ defmodule OCCI.Mixfile do
     [
       app: :occi,
       version: "0.2.3",
-      elixir: "~> 1.3",
+      elixir: ">= 1.3.4",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(Mix.env()),
